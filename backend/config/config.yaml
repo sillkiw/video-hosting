@@ -1,0 +1,58 @@
+server:
+  http:
+    read_timeout: 10s
+    write_timeout: 10s
+    idle_timeout: 60s
+
+upload:
+  path:            "./uploads"
+  max_size:        5000000000 # 5GiB   
+  max_per_hour:    10      
+  max_name_length: 30
+
+video:
+  dash_path:     "./data/dash"
+  raw_path:      "./data/raw"
+  perpage:          10 #Nr of displayed video per page in Video list
+  delete_original:  true
+  delete_old:
+    enabled:        false
+    days:           7
+    check_interval: 1h
+
+  resolutions:
+    low:  "640x360"   #resolution for Low quality video 
+    med:  "1280x720"  #resolution for Medium quality video
+    high: "1920x1080" #resolution for High quality video 
+
+  bitrates:
+    low:  "500k"      #BitRate value used in low conversion
+    med:  "1500k"     #BitRate value used in medium conversion
+    high: "3000k"     #BitRate value used in high conversion
+
+  ffmpeg:
+    threads: 1
+    preset:  "faster"    # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+
+  streaming:
+    dash:        true
+    hls:         false
+    allow_embed: true
+
+validation:
+  title:
+    min_len: 1
+    max_len: 100
+  upload:
+    min_bytes: 102400
+    max_bytes: 2147483648
+    allowed_content_types:
+    - "video/mp4"
+
+
+
+auth:
+  users_file_path: "./users.yaml"
+  upload_allowed_roles:   ["admin", "user"]
+  view_allowed_roles:     ["admin", "user"]
+  delete_allowed_roles:   ["admin"]

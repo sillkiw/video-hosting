@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+
+volumes:
+  postgres_data:
