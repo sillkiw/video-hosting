@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sillkiw/gotube/internal/app"
-	"github.com/sillkiw/gotube/internal/config"
+	"github.com/sillkiw/video-hosting/internal/app"
+	"github.com/sillkiw/video-hosting/internal/config"
 )
 
 const (

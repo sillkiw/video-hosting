@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/sillkiw/video-hosting/internal/storage"
+	"github.com/sillkiw/video-hosting/internal/videos"
 )
 
 const uniqueViolationCode = "23505"

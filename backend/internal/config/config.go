@@ -14,7 +14,6 @@ type Config struct {
 	Upload     UploadConfig     `yaml:"upload"`
 	Video      VideoConfig      `yaml:"video"`
 	Validation ValidationConfig `yaml:"validation"`
-	Auth       AuthConfig       `yaml:"auth"`
 	DB         Postgres         `yaml:"db"`
 }
 
