@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -32,7 +33,7 @@ func New(postgresSql string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Create(v videos.Video) (string, error) {
+func (s *Storage) Create(ctx context.Context, v videos.Video) (string, error) {
 	const op = "storage.postgres.Create"
 	const q = `
 		INSERT INTO videos(title, video_size, video_status) 
@@ -40,18 +41,21 @@ func (s *Storage) Create(v videos.Video) (string, error) {
 		RETURNING id
 	`
 	var id string
-	err := s.db.QueryRow(q, v.Title, v.Size, v.Status).Scan(&id)
+	err := s.db.QueryRowContext(ctx, q, v.Title, v.Size, v.Status).Scan(&id)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == uniqueViolationCode {
 			return "", fmt.Errorf("%s: insert: %w", op, storage.ErrTitleExists)
+		}
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return "", fmt.Errorf("%s: canceled: %w", op, err)
 		}
 		return "", fmt.Errorf("%s: insert: %w", op, err)
 	}
 	return id, nil
 }
 
-func (s *Storage) Get(id string) (videos.Video, error) {
+func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
 	const op = "storage.postgres.Get"
 	const q = `
 		SELECT * 
@@ -59,7 +63,7 @@ func (s *Storage) Get(id string) (videos.Video, error) {
 		WHERE id = $1 
 	`
 	var vRec videos.Video
-	err := s.db.QueryRow(q, id).Scan(&vRec.ID, &vRec.Title, &vRec.Size, &vRec.Status)
+	err := s.db.QueryRowContext(ctx, q, id).Scan(&vRec.ID, &vRec.Title, &vRec.Size, &vRec.Status)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return videos.Video{}, storage.ErrIdNotFound
@@ -67,6 +71,19 @@ func (s *Storage) Get(id string) (videos.Video, error) {
 		return videos.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 	return vRec, nil
+}
+
+func (s *Storage) ChangeStatus(ctx context.Context, id string, newStatus string) error {
+	const op = "storage.postgres.ChangeStatus"
+	const q = `
+		UPDATE videos 
+		SET video_status = $1 
+		WHERE id = $2
+	`
+	err := s.db.ExecContext(ctx, q, newStatus, id)
+	if err != nil {
+
+	}
 }
 
 func (s *Storage) Close() error {

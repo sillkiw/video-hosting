@@ -19,7 +19,7 @@ const (
 )
 
 func main() {
-	configPath := flag.String("config", "./config/config.yaml", "Path to configuration file")
+	configPath := flag.String("config", "./configs/config.yaml", "Path to configuration file")
 	flag.Parse()
 	cfg := config.MustLoad(*configPath)
 
@@ -53,10 +53,8 @@ func setupLogger(env string) (*slog.Logger, *log.Logger) {
 
 	var handler slog.Handler
 	switch env {
-	case envLocal:
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	case envDev:
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	case envProd:
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	default:

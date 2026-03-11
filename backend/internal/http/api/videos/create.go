@@ -48,7 +48,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 		Status: videos.StatusCreated,
 	}
 
-	id, err := vh.svc.Create(video)
+	id, err := vh.svc.Create(r.Context(), video)
 	if err != nil {
 		l.Error("failed to create video record",
 			slog.Any("err", err),
