@@ -8,11 +8,14 @@ export type CreateResponse = {
   id: string;
   status: string;
   upload: {
-    method: "PUT";
+    method: "PUT" | "POST";
     url: string;
     headers?: Record<string, string>;
     max_bytes?: number;
-    max_size?: number; 
+    max_size?: number; // на случай если бэк пока возвращает так
+  };
+  links?: {
+    self?: string;
   };
 };
 
@@ -31,12 +34,11 @@ async function parseApiError(res: Response): Promise<ApiError> {
 }
 
 export async function createVideo(req: CreateRequest): Promise<CreateResponse> {
-  const res = await fetch("/api/videos/create", {
+  const res = await fetch("/api/videos", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
   });
-
   if (!res.ok) throw await parseApiError(res);
   return (await res.json()) as CreateResponse;
 }
@@ -52,6 +54,5 @@ export async function uploadVideo(
     headers: headers ?? {},
     body: file,
   });
-
   if (!res.ok) throw await parseApiError(res);
 }

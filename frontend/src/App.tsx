@@ -1,107 +1,302 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { FiUpload, FiUser, FiPlayCircle, FiX } from "react-icons/fi";
 import { createVideo, uploadVideo } from "./api";
-import type { ApiError } from "./api";
+import type { ApiError, CreateResponse } from "./api";
+
+type UploadState =
+  | { kind: "idle" }
+  | { kind: "creating" }
+  | { kind: "uploading"; id: string }
+  | { kind: "done"; id: string }
+  | { kind: "error"; err: ApiError };
+
+function classNames(...xs: Array<string | false | null | undefined>) {
+  return xs.filter(Boolean).join(" ");
+}
+
 export default function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // upload form state
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [state, setState] = useState<UploadState>({ kind: "idle" });
 
-  const [loading, setLoading] = useState(false);
-  const [resultId, setResultId] = useState<string | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const inferredContentType = useMemo(() => {
     if (!file) return "video/mp4";
     return file.type || "video/mp4";
   }, [file]);
 
+  const maxBytes = useMemo(() => {
+    // если бэк вернул лимит в create response — покажем после create
+    return undefined as number | undefined;
+  }, []);
+
+  function openModal() {
+    setIsModalOpen(true);
+    setState({ kind: "idle" });
+  }
+
+  function closeModal() {
+    if (state.kind === "creating" || state.kind === "uploading") return; // не закрываем во время операции
+    setIsModalOpen(false);
+  }
+
+  function onPickFileClick() {
+    inputRef.current?.click();
+  }
+
+  function onFileChosen(f: File | null) {
+    setFile(f);
+    if (f && !title.trim()) {
+      // авто-подстановка названия из имени файла (без расширения)
+      const base = f.name.replace(/\.[^/.]+$/, "");
+      setTitle(base);
+    }
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0] ?? null;
+    if (f) onFileChosen(f);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setResultId(null);
-
     if (!file) {
-      setError({ code: "no_file", message: "Choose a file first" });
+      setState({ kind: "error", err: { code: "no_file", message: "Выберите файл" } });
       return;
     }
     if (!title.trim()) {
-      setError({ code: "no_title", message: "Title is required" });
+      setState({ kind: "error", err: { code: "no_title", message: "Введите название видео" } });
       return;
     }
 
-    setLoading(true);
     try {
+      setState({ kind: "creating" });
+
       // 1) create
-      const created = await createVideo({
+      const created: CreateResponse = await createVideo({
         title: title.trim(),
         content_type: inferredContentType,
         size: file.size,
       });
 
       // 2) upload
-      await uploadVideo(
-        created.upload.url,
-        created.upload.method,
-        file,
-        created.upload.headers
-      );
+      setState({ kind: "uploading", id: created.id });
+      await uploadVideo(created.upload.url, created.upload.method, file, created.upload.headers);
 
-      setResultId(created.id);
-    } catch (e: any) {
-      // e is ApiError (we throw it from api.ts)
-      setError(e as ApiError);
-    } finally {
-      setLoading(false);
+      setState({ kind: "done", id: created.id });
+    } catch (err: any) {
+      setState({ kind: "error", err: err as ApiError });
     }
   }
 
+  const gridPlaceholders = Array.from({ length: 12 }, (_, i) => i);
+
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", fontFamily: "system-ui" }}>
-      <h1>Video Hosting MVP</h1>
-
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>Title</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={loading}
-            placeholder="My video"
-            style={{ padding: 10 }}
-          />
-        </label>
-
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>MP4 file</span>
-          <input
-            type="file"
-            accept="video/mp4"
-            disabled={loading}
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-
-        <button disabled={loading} style={{ padding: 12 }}>
-          {loading ? "Uploading..." : "Create & Upload"}
-        </button>
-      </form>
-
-      {resultId && (
-        <div style={{ marginTop: 16 }}>
-          <b>Uploaded.</b> Video ID: <code>{resultId}</code>
-        </div>
-      )}
-
-      {error && (
-        <div style={{ marginTop: 16, color: "crimson" }}>
-          <div>
-            <b>Error:</b> <code>{error.code}</code>
+    <div className="min-h-screen bg-[#F8F9FA] text-[#1F2937]">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+        {/* title */}
+        
+          <div className="flex items-baseline gap-0.5 select-none">
+  <span className="text-lg font-extrabold tracking-tight">
+    <span className="bg-gradient-to-r from-[#2563EB] to-[#1E3A8A] bg-clip-text text-transparent">
+      go
+    </span>
+    <span className="text-[#1F2937]">watchhub</span>
+  </span>
+  
+</div>
+        {/* title */}
+            <button
+              onClick={openModal}
+              className="group inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition
+                         hover:bg-[#1D4ED8] hover:shadow-md active:scale-[0.99]"
+            >
+              <FiUpload className="text-white/95 transition group-hover:translate-y-[-1px]" />
+              Загрузить
+            </button>
           </div>
-          {error.message && <div>{error.message}</div>}
-          {error.fields && (
-            <pre style={{ whiteSpace: "pre-wrap" }}>
-              {JSON.stringify(error.fields, null, 2)}
-            </pre>
-          )}
+
+          <button
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#E5E7EB] text-[#1F2937] transition hover:bg-[#D1D5DB]"
+            aria-label="Account"
+            title="Account"
+          >
+            <FiUser />
+          </button>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold tracking-tight">Галерея</h2>
+          <p className="mt-1 text-sm text-[#6B7280]">
+            Пока это заглушки. После обработки появятся реальные карточки и воспроизведение.
+          </p>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {gridPlaceholders.map((i) => (
+            <div
+              key={i}
+              className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.08)]"
+            >
+              {/* Preview */}
+              <div className="relative aspect-video bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE]">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <FiPlayCircle className="h-12 w-12 text-[#2563EB] opacity-70" />
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-4">
+                <div className="mb-2 line-clamp-1 font-semibold text-[#374151]">
+                  Название видео
+                </div>
+                <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#E5E7EB]">
+                      <FiUser className="text-[#1F2937]" />
+                    </span>
+                    Автор
+                  </div>
+                  <div>1.2K просмотров</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            // закрытие по клику вне окна
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-[0_18px_45px_-15px_rgba(0,0,0,0.25)]">
+            <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
+              <div className="text-base font-semibold">Загрузить новое видео</div>
+              <button
+                onClick={closeModal}
+                className={classNames(
+                  "inline-flex h-9 w-9 items-center justify-center rounded-full transition",
+                  state.kind === "creating" || state.kind === "uploading"
+                    ? "cursor-not-allowed bg-[#F3F4F6] text-[#9CA3AF]"
+                    : "bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]"
+                )}
+                aria-label="Close"
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <form onSubmit={onSubmit} className="px-6 py-5">
+              {/* Dropzone */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={onDrop}
+                className={classNames(
+                  "rounded-2xl border-2 border-dashed p-6 text-center transition",
+                  file ? "border-[#2563EB] bg-[#EFF6FF]" : "border-[#2563EB] bg-[#F3F4F6]"
+                )}
+              >
+                <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  <FiUpload className="text-[#2563EB]" />
+                </div>
+
+                <div className="text-sm text-[#374151]">
+                  Перетащите файл сюда или{" "}
+                  <button
+                    type="button"
+                    onClick={onPickFileClick}
+                    className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
+                  >
+                    выберите файл
+                  </button>
+                </div>
+
+                <div className="mt-2 text-xs text-[#6B7280]">
+                  Поддерживается MP4. {file ? `Выбрано: ${file.name}` : "Файл не выбран"}
+                </div>
+
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="video/mp4"
+                  className="hidden"
+                  onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
+                  disabled={state.kind === "creating" || state.kind === "uploading"}
+                />
+              </div>
+
+              {/* Title */}
+              <div className="mt-4">
+                <label className="text-sm font-medium text-[#374151]">Название</label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Введите название видео"
+                  className="mt-2 w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]"
+                  disabled={state.kind === "creating" || state.kind === "uploading"}
+                />
+              </div>
+
+              {/* State / Error */}
+              <div className="mt-4 min-h-[22px] text-sm">
+                {state.kind === "creating" && (
+                  <span className="text-[#6B7280]">Создаю запись…</span>
+                )}
+                {state.kind === "uploading" && (
+                  <span className="text-[#6B7280]">Загружаю файл…</span>
+                )}
+                {state.kind === "done" && (
+                  <span className="text-emerald-700">
+                    Готово. Video ID: <code className="text-emerald-800">{state.id}</code>
+                  </span>
+                )}
+                {state.kind === "error" && (
+                  <span className="text-red-600">
+                    <b>{state.err.code}</b>
+                    {state.err.message ? ` — ${state.err.message}` : ""}
+                  </span>
+                )}
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                className={classNames(
+                  "mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition",
+                  state.kind === "creating" || state.kind === "uploading"
+                    ? "cursor-not-allowed bg-[#93C5FD]"
+                    : "bg-[#2563EB] hover:bg-[#1D4ED8] hover:shadow-md active:scale-[0.99]"
+                )}
+                disabled={state.kind === "creating" || state.kind === "uploading"}
+              >
+                Опубликовать
+              </button>
+
+              {/* Hint */}
+              <div className="mt-3 text-xs text-[#6B7280]">
+                После загрузки появится ID. Позже добавим страницу статуса и проигрывание DASH.
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
