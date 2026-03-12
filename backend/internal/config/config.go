@@ -89,5 +89,4 @@ func buildPostgresDSN(host, port, dbname, user, password string) string {
 	q.Set("sslmode", "disable")
 	u.RawQuery = q.Encode()
 	return u.String()
-
 }

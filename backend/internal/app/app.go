@@ -39,9 +39,9 @@ func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, er
 	}
 	a.db = storage
 
-	fileStore := disk.New(cfg.Video.DashPath, cfg.Video.RawPath)
+	diskStore := disk.New(cfg.Video.DashPath, cfg.Video.RawPath)
 
-	videosServ := videos.New(storage, fileStore)
+	videosServ := videos.New(storage, diskStore)
 	validator := videosvalidation.New(cfg.Validation)
 	videosHandler := videosapi.New(logger, videosServ, validator)
 

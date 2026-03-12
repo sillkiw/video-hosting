@@ -2,16 +2,14 @@ package videos
 
 import "time"
 
-type Status string
-
 const (
-	StatusCreated          Status = "created"
-	StatusUploaded         Status = "uploaded"
-	StatusUploading        Status = "uploading"
-	StatusUploadFailed     Status = "failed_upload"
-	StatusReady            Status = "ready"
-	StatusProcessing       Status = "processing"
-	StatusProcessingFailed Status = "failed_processing"
+	StatusCreated          string = "created"
+	StatusUploaded         string = "uploaded"
+	StatusUploading        string = "uploading"
+	StatusUploadFailed     string = "failed_upload"
+	StatusReady            string = "ready"
+	StatusProcessing       string = "processing"
+	StatusProcessingFailed string = "failed_processing"
 )
 
 type Video struct {
@@ -19,7 +17,7 @@ type Video struct {
 	Title       string
 	Size        int64
 	ContentType string
-	Status      Status
+	Status      string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

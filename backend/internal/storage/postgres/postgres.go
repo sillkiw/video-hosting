@@ -66,24 +66,49 @@ func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
 	err := s.db.QueryRowContext(ctx, q, id).Scan(&vRec.ID, &vRec.Title, &vRec.Size, &vRec.Status)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return videos.Video{}, storage.ErrIdNotFound
+			return videos.Video{}, fmt.Errorf("%s: %w", op, storage.ErrIdNotFound)
 		}
 		return videos.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 	return vRec, nil
 }
 
-func (s *Storage) ChangeStatus(ctx context.Context, id string, newStatus string) error {
-	const op = "storage.postgres.ChangeStatus"
-	const q = `
-		UPDATE videos 
-		SET video_status = $1 
-		WHERE id = $2
-	`
-	err := s.db.ExecContext(ctx, q, newStatus, id)
-	if err != nil {
+func (s *Storage) GetStatus(ctx context.Context, id string) (string, error) {
+	const op = "storage.postgres.GetStatus"
 
+	vRec, err := s.Get(ctx, id)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
+	return vRec.Status, nil
+}
+
+func (s *Storage) MarkNewStatus(ctx context.Context, id, prevStatus, newStatus string) error {
+	const op = "storage.postgres.MarkUploading"
+	const q = `
+		UPDATE videos
+		SET video_status = $2, updated_at = now()
+		WHERE id = $1 AND video_status = $3
+	`
+
+	res, err := s.db.ExecContext(ctx, q, id, newStatus, prevStatus)
+	if err != nil {
+		return fmt.Errorf("%s: exec: %w", op, err)
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: rows_affected: %w", op, err)
+	}
+	if n == 1 {
+		return nil
+	}
+
+	_, err = s.Get(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return fmt.Errorf("%s: %w", op, storage.ErrConflict)
 }
 
 func (s *Storage) Close() error {

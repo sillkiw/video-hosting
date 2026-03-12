@@ -10,7 +10,7 @@ type CreateResponse struct {
 	ID     string        `json:"id"`
 	Status string        `json:"status"`
 	Upload UploadDetails `json:"upload"`
-	Links  Links         `json:"links,omitempty"`
+	Links  LinksCr       `json:"links,omitempty"`
 }
 
 type UploadDetails struct {
@@ -20,6 +20,6 @@ type UploadDetails struct {
 	MaxBytes int64             `json:"max_size,omitempty"`
 }
 
-type Links struct {
+type LinksCr struct {
 	Self string `json:"self,omitempty"`
 }

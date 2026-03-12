@@ -43,9 +43,10 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	video := videos.Video{
-		Title:  req.Title,
-		Size:   req.Size,
-		Status: videos.StatusCreated,
+		Title:       req.Title,
+		Size:        req.Size,
+		ContentType: req.ContentType,
+		Status:      videos.StatusCreated,
 	}
 
 	id, err := vh.svc.Create(r.Context(), video)
@@ -72,7 +73,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 			},
 			MaxBytes: vh.validator.Cfg.UplLimit.MaxSize,
 		},
-		Links: dto.Links{
+		Links: dto.LinksCr{
 			Self: "/api/videos/" + id,
 		},
 	}

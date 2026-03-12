@@ -20,7 +20,7 @@ func New(dashPath string, rawPath string) DiskStore {
 	}
 }
 
-func (ds *DiskStore) SaveRaw(ctx context.Context, id string, src io.Reader) (int64, error) {
+func (ds DiskStore) SaveRaw(ctx context.Context, id string, src io.Reader) (int64, error) {
 	const op = "DiskStore.SaveRaw"
 
 	if err := os.MkdirAll(ds.RawPath, 0o755); err != nil {
@@ -53,10 +53,10 @@ func (ds *DiskStore) SaveRaw(ctx context.Context, id string, src io.Reader) (int
 	return n, nil
 }
 
-func (ds *DiskStore) tmpPathFor(id string) string {
+func (ds DiskStore) tmpPathFor(id string) string {
 	return filepath.Join(ds.RawPath, id+".mp4.uploading")
 }
 
-func (ds *DiskStore) pathFor(id string) string {
+func (ds DiskStore) pathFor(id string) string {
 	return filepath.Join(ds.RawPath, id+".mp4")
 }

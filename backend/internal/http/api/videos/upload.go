@@ -17,7 +17,7 @@ func (vh *VideosHandler) upload(w http.ResponseWriter, r *http.Request) {
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 	)
 
-	id := chi.URLParam(r, "id")
+	id := chi.URLParam(r, "video_id")
 	ctx := r.Context()
 
 	// v, err := vh.svc.Get(ctx, id)
@@ -71,7 +71,7 @@ func (vh *VideosHandler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := vh.svc.MarkUploaded(ctx, id, n); err != nil {
+	if err := vh.svc.MarkUploaded(ctx, id); err != nil {
 		_ = vh.svc.MarkUploadFailed(ctx, id)
 		l.Error("cannot update video status", slog.String("id", id), slog.Any("err", err))
 		status, body := apierrors.Map(err)
