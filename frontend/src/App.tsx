@@ -1,5 +1,12 @@
 import { useMemo, useRef, useState } from "react";
-import { FiUpload, FiUser, FiPlayCircle, FiX } from "react-icons/fi";
+import {
+  FiUpload,
+  FiUser,
+  FiPlayCircle,
+  FiX,
+  FiSun,
+  FiMoon,
+} from "react-icons/fi";
 import { createVideo, uploadVideo, humanizeError } from "./api";
 import type { ApiError, CreateResponse, UiError } from "./api";
 
@@ -14,30 +21,37 @@ function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 
-function Logo() {
+function Logo({ isDark }: { isDark: boolean }) {
   return (
     <div className="flex items-center select-none">
-      <span className="text-lg font-extrabold tracking-tight">
-        <span className="bg-gradient-to-r from-[#2563EB] to-[#1E3A8A] bg-clip-text text-transparent">
-          go
+      <span className="flex items-center text-xl font-black tracking-tight">
+        <span className="text-[#2563EB]">Go</span>
+        <span
+          className={classNames(
+            "transition-colors duration-500",
+            isDark ? "text-white" : "text-[#111827]"
+          )}
+        >
+          Watch
         </span>
-        <span className="text-[#1F2937]">watch</span>
-      </span>
-      <span
-        className="ml-2 inline-flex items-center rounded-[10px] bg-[#2563EB] px-2.5 py-1 text-[12px] font-extrabold leading-none tracking-[0.14em] text-white
-                   shadow-[0_10px_25px_-10px_rgba(37,99,235,0.55)] transition
-                   hover:bg-[#1D4ED8] hover:shadow-[0_14px_30px_-12px_rgba(37,99,235,0.65)] active:scale-[0.98]"
-      >
-        HUB
+        <span className="ml-1 rounded-md bg-[#2563EB] px-2 py-0.5 text-white shadow-sm">
+          HUB
+        </span>
       </span>
     </div>
   );
 }
 
+function formatViews(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M просмотров`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K просмотров`;
+  return `${n} просмотров`;
+}
+
 export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
-  // upload form state
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<UploadState>({ kind: "idle" });
@@ -80,18 +94,24 @@ export default function App() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // локальные проверки (без code, только человеческий текст)
     if (!file) {
       setState({
         kind: "error",
-        err: { title: "Файл не выбран", description: "Выберите MP4-файл для загрузки." },
+        err: {
+          title: "Файл не выбран",
+          description: "Выберите MP4-файл для загрузки.",
+        },
       });
       return;
     }
+
     if (!title.trim()) {
       setState({
         kind: "error",
-        err: { title: "Название не задано", description: "Введите название видео." },
+        err: {
+          title: "Название не задано",
+          description: "Введите название видео.",
+        },
       });
       return;
     }
@@ -106,7 +126,12 @@ export default function App() {
       });
 
       setState({ kind: "uploading", id: created.id });
-      await uploadVideo(created.upload.url, created.upload.method, file, created.upload.headers);
+      await uploadVideo(
+        created.upload.url,
+        created.upload.method,
+        file,
+        created.upload.headers
+      );
 
       setState({ kind: "done", id: created.id });
     } catch (err: any) {
@@ -115,75 +140,199 @@ export default function App() {
     }
   }
 
-  const gridPlaceholders = Array.from({ length: 12 }, (_, i) => i);
+  const mockVideos = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    title: `Demo video ${i + 1}`,
+    author: "Creator",
+    views: 1200 * (i + 1),
+    duration: ["12:43", "08:19", "21:04", "04:58"][i % 4],
+  }));
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1F2937]">
+    <div
+      className={classNames(
+        "min-h-screen transition-[background-color,color] duration-500 ease-in-out",
+        isDark ? "bg-[#0B0B0F] text-white" : "bg-[#F8FAFC] text-[#111827]"
+      )}
+    >
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Logo />
+      <header
+        className={classNames(
+          "sticky top-0 z-40 border-b backdrop-blur-md transition-[background-color,border-color,color] duration-500 ease-in-out",
+          isDark
+            ? "border-white/10 bg-[#111318]/95"
+            : "border-black/5 bg-white/90"
+        )}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <Logo isDark={isDark} />
+          </div>
+
+          <div className="hidden flex-1 px-6 md:block">
+            <div className="mx-auto max-w-xl">
+              <input
+                placeholder="Поиск видео..."
+                className={classNames(
+                  "h-10 w-full rounded-md border px-4 text-sm outline-none transition-[background-color,border-color,color,box-shadow] duration-500 ease-in-out",
+                  isDark
+                    ? "border-white/10 bg-[#1A1D24] text-white placeholder:text-white/35 focus:border-[#2563EB]"
+                    : "border-slate-200 bg-white text-[#111827] placeholder:text-slate-400 focus:border-[#2563EB]"
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDark((v) => !v)}
+              className={classNames(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-500 ease-in-out",
+                isDark
+                  ? "border-white/10 bg-[#1A1D24] text-white hover:border-[#2563EB]"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-[#2563EB] hover:text-[#2563EB]"
+              )}
+              aria-label="Toggle theme"
+              title="Сменить тему"
+            >
+              <span className="transition-transform duration-500 ease-in-out hover:rotate-12">
+                {isDark ? <FiSun /> : <FiMoon />}
+              </span>
+            </button>
 
             <button
               onClick={openModal}
-              className="group inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition
-                         hover:bg-[#1D4ED8] hover:shadow-md active:scale-[0.99]"
+              className="inline-flex items-center gap-2 rounded-md bg-[#2563EB] px-4 py-2 text-sm font-bold text-white transition-all duration-300 hover:bg-[#1D4ED8] hover:shadow-lg"
             >
-              <FiUpload className="text-white/95 transition group-hover:translate-y-[-1px]" />
+              <FiUpload />
               Загрузить
             </button>
-          </div>
 
-          <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#E5E7EB] text-[#1F2937] transition hover:bg-[#D1D5DB]"
-            aria-label="Account"
-            title="Account"
-          >
-            <FiUser />
-          </button>
+            <button
+              className={classNames(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-500 ease-in-out",
+                isDark
+                  ? "border-white/10 bg-[#1A1D24] text-white hover:border-[#2563EB] hover:text-[#60A5FA]"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-[#2563EB] hover:text-[#2563EB]"
+              )}
+              aria-label="Account"
+              title="Account"
+            >
+              <FiUser />
+            </button>
+          </div>
         </div>
       </header>
 
+      {/* Hero */}
+      <section
+        className={classNames(
+          "border-b transition-[background-color,border-color] duration-500 ease-in-out",
+          isDark
+            ? "border-white/5 bg-gradient-to-b from-[#111318] to-[#0B0B0F]"
+            : "border-black/5 bg-gradient-to-b from-[#EFF6FF] to-[#F8FAFC]"
+        )}
+      >
+      
+      </section>
+
       {/* Content */}
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold tracking-tight">Галерея</h2>
-          <p className="mt-1 text-sm text-[#6B7280]">
-            Пока это заглушки. Позже добавим реальный список, статус и воспроизведение.
-          </p>
+      <main className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">Trending</h2>
+            <p
+              className={classNames(
+                "mt-1 text-sm transition-colors duration-500",
+                isDark ? "text-white/45" : "text-slate-500"
+              )}
+            >
+              Пока это моковые карточки. Дальше можно подключить реальный список.
+            </p>
+          </div>
+
+          <div className="hidden gap-2 md:flex">
+            {["All", "New", "Popular", "HD"].map((x) => (
+              <button
+                key={x}
+                className={classNames(
+                  "rounded-md border px-3 py-1.5 text-sm font-semibold transition-all duration-500 ease-in-out",
+                  x === "All"
+                    ? "border-[#2563EB] bg-[#2563EB] text-white"
+                    : isDark
+                    ? "border-white/10 bg-[#151821] text-white/75 hover:border-[#2563EB] hover:text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-[#2563EB] hover:text-[#2563EB]"
+                )}
+              >
+                {x}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {gridPlaceholders.map((i) => (
-            <div
-              key={i}
-              className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.08)]"
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {mockVideos.map((video) => (
+            <article
+              key={video.id}
+              className={classNames(
+                "group overflow-hidden rounded-lg ring-1 transition-[background-color,transform,box-shadow,border-color] duration-500 ease-in-out",
+                isDark
+                  ? "bg-[#14171F] ring-white/6 hover:-translate-y-0.5 hover:ring-[#2563EB]/60"
+                  : "bg-white ring-black/6 shadow-sm hover:-translate-y-0.5 hover:ring-[#2563EB]/60 hover:shadow-lg"
+              )}
             >
-              {/* Preview */}
-              <div className="relative aspect-video bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE]">
+              <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[#111827] via-[#172554] to-[#2563EB]">
+                <div className="absolute inset-0 bg-black/20 transition duration-300 group-hover:bg-black/10" />
+
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <FiPlayCircle className="h-12 w-12 text-[#2563EB] opacity-70" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition duration-300 group-hover:scale-105 group-hover:bg-[#2563EB]">
+                    <FiPlayCircle className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+
+                <div className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                  {video.duration}
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="p-4">
-                <div className="mb-2 line-clamp-1 font-semibold text-[#374151]">
-                  Название видео
+              <div className="p-3">
+                <div
+                  className={classNames(
+                    "text-sm font-bold leading-5 transition-colors duration-500",
+                    isDark ? "text-white" : "text-[#111827]"
+                  )}
+                >
+                  {video.title}
                 </div>
-                <div className="flex items-center justify-between text-xs text-[#6B7280]">
-                  <div className="inline-flex items-center gap-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#E5E7EB]">
-                      <FiUser className="text-[#1F2937]" />
-                    </span>
-                    Автор
-                  </div>
-                  <div>1.2K просмотров</div>
+
+                <div
+                  className={classNames(
+                    "mt-2 flex items-center gap-2 text-xs transition-colors duration-500",
+                    isDark ? "text-white/55" : "text-slate-500"
+                  )}
+                >
+                  <span
+                    className={classNames(
+                      "inline-flex h-7 w-7 items-center justify-center rounded-full transition-[background-color,color] duration-500",
+                      isDark ? "bg-[#1F2430]" : "bg-slate-100"
+                    )}
+                  >
+                    <FiUser className={isDark ? "text-white/80" : "text-slate-700"} />
+                  </span>
+                  <span>{video.author}</span>
+                </div>
+
+                <div
+                  className={classNames(
+                    "mt-2 text-xs transition-colors duration-500",
+                    isDark ? "text-white/40" : "text-slate-400"
+                  )}
+                >
+                  {formatViews(video.views)}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </main>
@@ -191,23 +340,47 @@ export default function App() {
       {/* Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm transition-opacity duration-300"
           role="dialog"
           aria-modal="true"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) closeModal();
           }}
         >
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-[0_18px_45px_-15px_rgba(0,0,0,0.25)]">
-            <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-              <div className="text-base font-semibold">Загрузить новое видео</div>
+          <div
+            className={classNames(
+              "w-full max-w-lg overflow-hidden rounded-xl border shadow-[0_25px_80px_-20px_rgba(0,0,0,0.45)] transition-[background-color,border-color,color] duration-500 ease-in-out",
+              isDark
+                ? "border-white/10 bg-[#14171F]"
+                : "border-slate-200 bg-white"
+            )}
+          >
+            <div
+              className={classNames(
+                "flex items-center justify-between border-b px-6 py-4 transition-[border-color] duration-500",
+                isDark ? "border-white/10" : "border-slate-200"
+              )}
+            >
+              <div
+                className={classNames(
+                  "text-base font-bold transition-colors duration-500",
+                  isDark ? "text-white" : "text-[#111827]"
+                )}
+              >
+                Upload new video
+              </div>
+
               <button
                 onClick={closeModal}
                 className={classNames(
-                  "inline-flex h-9 w-9 items-center justify-center rounded-full transition",
+                  "inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-500 ease-in-out",
                   state.kind === "creating" || state.kind === "uploading"
-                    ? "cursor-not-allowed bg-[#F3F4F6] text-[#9CA3AF]"
-                    : "bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]"
+                    ? isDark
+                      ? "cursor-not-allowed bg-white/5 text-white/25"
+                      : "cursor-not-allowed bg-slate-100 text-slate-300"
+                    : isDark
+                    ? "bg-white/5 text-white/80 hover:bg-white/10"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 )}
                 aria-label="Close"
               >
@@ -216,31 +389,56 @@ export default function App() {
             </div>
 
             <form onSubmit={onSubmit} className="px-6 py-5">
-              {/* Dropzone */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={onDrop}
                 className={classNames(
-                  "rounded-2xl border-2 border-dashed p-6 text-center transition",
-                  file ? "border-[#2563EB] bg-[#EFF6FF]" : "border-[#2563EB] bg-[#F3F4F6]"
+                  "rounded-xl border-2 border-dashed p-6 text-center transition-[background-color,border-color] duration-500 ease-in-out",
+                  file
+                    ? "border-[#2563EB]"
+                    : isDark
+                    ? "border-white/15"
+                    : "border-slate-300",
+                  file
+                    ? isDark
+                      ? "bg-[#0F172A]"
+                      : "bg-[#EFF6FF]"
+                    : isDark
+                    ? "bg-[#10131A]"
+                    : "bg-slate-50"
                 )}
               >
-                <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  <FiUpload className="text-[#2563EB]" />
+                <div
+                  className={classNames(
+                    "mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-[background-color,box-shadow] duration-500",
+                    isDark ? "bg-[#1B2230]" : "bg-white shadow-sm"
+                  )}
+                >
+                  <FiUpload className="text-[#60A5FA]" />
                 </div>
 
-                <div className="text-sm text-[#374151]">
+                <div
+                  className={classNames(
+                    "text-sm transition-colors duration-500",
+                    isDark ? "text-white/85" : "text-slate-700"
+                  )}
+                >
                   Перетащите файл сюда или{" "}
                   <button
                     type="button"
                     onClick={onPickFileClick}
-                    className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
+                    className="font-bold text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8]"
                   >
                     выберите файл
                   </button>
                 </div>
 
-                <div className="mt-2 text-xs text-[#6B7280]">
+                <div
+                  className={classNames(
+                    "mt-2 text-xs transition-colors duration-500",
+                    isDark ? "text-white/45" : "text-slate-500"
+                  )}
+                >
                   Поддерживается MP4. {file ? `Выбрано: ${file.name}` : "Файл не выбран"}
                 </div>
 
@@ -254,35 +452,54 @@ export default function App() {
                 />
               </div>
 
-              {/* Title */}
               <div className="mt-4">
-                <label className="text-sm font-medium text-[#374151]">Название</label>
+                <label
+                  className={classNames(
+                    "text-sm font-medium transition-colors duration-500",
+                    isDark ? "text-white/85" : "text-slate-700"
+                  )}
+                >
+                  Название
+                </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Введите название видео"
-                  className="mt-2 w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]"
+                  className={classNames(
+                    "mt-2 w-full rounded-lg border px-4 py-3 text-sm outline-none transition-[background-color,border-color,color,box-shadow] duration-500 ease-in-out",
+                    isDark
+                      ? "border-white/10 bg-[#0F1117] text-white placeholder:text-white/30 focus:border-[#2563EB]"
+                      : "border-slate-200 bg-white text-[#111827] placeholder:text-slate-400 focus:border-[#2563EB]"
+                  )}
                   disabled={state.kind === "creating" || state.kind === "uploading"}
                 />
               </div>
 
-              {/* State / Error */}
               <div className="mt-4 min-h-[22px] text-sm">
                 {state.kind === "creating" && (
-                  <span className="text-[#6B7280]">Создаю запись…</span>
-                )}
-                {state.kind === "uploading" && (
-                  <span className="text-[#6B7280]">Загружаю файл…</span>
-                )}
-                {state.kind === "done" && (
-                  <span className="text-emerald-700">
-                    Готово. Video ID: <code className="text-emerald-800">{state.id}</code>
+                  <span className={isDark ? "text-white/55" : "text-slate-500"}>
+                    Создаю запись…
                   </span>
                 )}
+
+                {state.kind === "uploading" && (
+                  <span className={isDark ? "text-white/55" : "text-slate-500"}>
+                    Загружаю файл…
+                  </span>
+                )}
+
+                {state.kind === "done" && (
+                  <span className="text-emerald-600">
+                    Готово. Video ID: <code>{state.id}</code>
+                  </span>
+                )}
+
                 {state.kind === "error" && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">
+                  <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-red-700">
                     <div className="font-semibold">{state.err.title}</div>
-                    {state.err.description && <div className="mt-1">{state.err.description}</div>}
+                    {state.err.description && (
+                      <div className="mt-1">{state.err.description}</div>
+                    )}
                     {state.err.fieldErrors?.length ? (
                       <ul className="mt-2 list-disc pl-5">
                         {state.err.fieldErrors.map((x) => (
@@ -294,21 +511,25 @@ export default function App() {
                 )}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 className={classNames(
-                  "mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition",
+                  "mt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-black uppercase tracking-wide transition-all duration-300",
                   state.kind === "creating" || state.kind === "uploading"
-                    ? "cursor-not-allowed bg-[#93C5FD]"
-                    : "bg-[#2563EB] hover:bg-[#1D4ED8] hover:shadow-md active:scale-[0.99]"
+                    ? "cursor-not-allowed bg-[#93C5FD] text-white/80"
+                    : "bg-[#2563EB] text-white hover:bg-[#1D4ED8] hover:shadow-lg"
                 )}
                 disabled={state.kind === "creating" || state.kind === "uploading"}
               >
                 Опубликовать
               </button>
 
-              <div className="mt-3 text-xs text-[#6B7280]">
+              <div
+                className={classNames(
+                  "mt-3 text-xs transition-colors duration-500",
+                  isDark ? "text-white/40" : "text-slate-500"
+                )}
+              >
                 После загрузки появится ID. Следующий шаг — статус видео и проигрывание DASH.
               </div>
             </form>
