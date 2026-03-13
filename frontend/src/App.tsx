@@ -1,17 +1,37 @@
 import { useMemo, useRef, useState } from "react";
 import { FiUpload, FiUser, FiPlayCircle, FiX } from "react-icons/fi";
-import { createVideo, uploadVideo } from "./api";
-import type { ApiError, CreateResponse } from "./api";
+import { createVideo, uploadVideo, humanizeError } from "./api";
+import type { ApiError, CreateResponse, UiError } from "./api";
 
 type UploadState =
   | { kind: "idle" }
   | { kind: "creating" }
   | { kind: "uploading"; id: string }
   | { kind: "done"; id: string }
-  | { kind: "error"; err: ApiError };
+  | { kind: "error"; err: UiError };
 
 function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
+}
+
+function Logo() {
+  return (
+    <div className="flex items-center select-none">
+      <span className="text-lg font-extrabold tracking-tight">
+        <span className="bg-gradient-to-r from-[#2563EB] to-[#1E3A8A] bg-clip-text text-transparent">
+          go
+        </span>
+        <span className="text-[#1F2937]">watch</span>
+      </span>
+      <span
+        className="ml-2 inline-flex items-center rounded-[10px] bg-[#2563EB] px-2.5 py-1 text-[12px] font-extrabold leading-none tracking-[0.14em] text-white
+                   shadow-[0_10px_25px_-10px_rgba(37,99,235,0.55)] transition
+                   hover:bg-[#1D4ED8] hover:shadow-[0_14px_30px_-12px_rgba(37,99,235,0.65)] active:scale-[0.98]"
+      >
+        HUB
+      </span>
+    </div>
+  );
 }
 
 export default function App() {
@@ -29,18 +49,13 @@ export default function App() {
     return file.type || "video/mp4";
   }, [file]);
 
-  const maxBytes = useMemo(() => {
-    // если бэк вернул лимит в create response — покажем после create
-    return undefined as number | undefined;
-  }, []);
-
   function openModal() {
     setIsModalOpen(true);
     setState({ kind: "idle" });
   }
 
   function closeModal() {
-    if (state.kind === "creating" || state.kind === "uploading") return; // не закрываем во время операции
+    if (state.kind === "creating" || state.kind === "uploading") return;
     setIsModalOpen(false);
   }
 
@@ -51,7 +66,6 @@ export default function App() {
   function onFileChosen(f: File | null) {
     setFile(f);
     if (f && !title.trim()) {
-      // авто-подстановка названия из имени файла (без расширения)
       const base = f.name.replace(/\.[^/.]+$/, "");
       setTitle(base);
     }
@@ -65,32 +79,39 @@ export default function App() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // локальные проверки (без code, только человеческий текст)
     if (!file) {
-      setState({ kind: "error", err: { code: "no_file", message: "Выберите файл" } });
+      setState({
+        kind: "error",
+        err: { title: "Файл не выбран", description: "Выберите MP4-файл для загрузки." },
+      });
       return;
     }
     if (!title.trim()) {
-      setState({ kind: "error", err: { code: "no_title", message: "Введите название видео" } });
+      setState({
+        kind: "error",
+        err: { title: "Название не задано", description: "Введите название видео." },
+      });
       return;
     }
 
     try {
       setState({ kind: "creating" });
 
-      // 1) create
       const created: CreateResponse = await createVideo({
         title: title.trim(),
         content_type: inferredContentType,
         size: file.size,
       });
 
-      // 2) upload
       setState({ kind: "uploading", id: created.id });
       await uploadVideo(created.upload.url, created.upload.method, file, created.upload.headers);
 
       setState({ kind: "done", id: created.id });
     } catch (err: any) {
-      setState({ kind: "error", err: err as ApiError });
+      const apiErr = err as ApiError;
+      setState({ kind: "error", err: humanizeError(apiErr) });
     }
   }
 
@@ -102,18 +123,8 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-black/5 bg-white/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-        {/* title */}
-        
-          <div className="flex items-baseline gap-0.5 select-none">
-  <span className="text-lg font-extrabold tracking-tight">
-    <span className="bg-gradient-to-r from-[#2563EB] to-[#1E3A8A] bg-clip-text text-transparent">
-      go
-    </span>
-    <span className="text-[#1F2937]">watchhub</span>
-  </span>
-  
-</div>
-        {/* title */}
+            <Logo />
+
             <button
               onClick={openModal}
               className="group inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-sm transition
@@ -139,7 +150,7 @@ export default function App() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold tracking-tight">Галерея</h2>
           <p className="mt-1 text-sm text-[#6B7280]">
-            Пока это заглушки. После обработки появятся реальные карточки и воспроизведение.
+            Пока это заглушки. Позже добавим реальный список, статус и воспроизведение.
           </p>
         </div>
 
@@ -184,7 +195,6 @@ export default function App() {
           role="dialog"
           aria-modal="true"
           onMouseDown={(e) => {
-            // закрытие по клику вне окна
             if (e.target === e.currentTarget) closeModal();
           }}
         >
@@ -270,10 +280,17 @@ export default function App() {
                   </span>
                 )}
                 {state.kind === "error" && (
-                  <span className="text-red-600">
-                    <b>{state.err.code}</b>
-                    {state.err.message ? ` — ${state.err.message}` : ""}
-                  </span>
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">
+                    <div className="font-semibold">{state.err.title}</div>
+                    {state.err.description && <div className="mt-1">{state.err.description}</div>}
+                    {state.err.fieldErrors?.length ? (
+                      <ul className="mt-2 list-disc pl-5">
+                        {state.err.fieldErrors.map((x) => (
+                          <li key={x}>{x}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
                 )}
               </div>
 
@@ -291,9 +308,8 @@ export default function App() {
                 Опубликовать
               </button>
 
-              {/* Hint */}
               <div className="mt-3 text-xs text-[#6B7280]">
-                После загрузки появится ID. Позже добавим страницу статуса и проигрывание DASH.
+                После загрузки появится ID. Следующий шаг — статус видео и проигрывание DASH.
               </div>
             </form>
           </div>

@@ -1,7 +1,6 @@
 package videosvalidation
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -14,7 +13,6 @@ func (v *Validator) CreateRequest(req dto.CreateRequest) apivalid.Errors {
 	v.title(errs, req.Title)
 	v.contentType(errs, req.ContentType)
 	v.size(errs, req.Size)
-	fmt.Println(map[string]string(errs))
 	return errs
 }
 
