@@ -2,7 +2,6 @@ package apierrors
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	apivalid "github.com/sillkiw/video-hosting/internal/http/api/validation"
@@ -21,7 +20,6 @@ func Map(err error) (int, ErrorBody) {
 
 func ValidationMap(err error) (ErrorBody, bool) {
 	var verrs apivalid.Errors
-	fmt.Println(err)
 	if errors.As(err, &verrs) {
 		return ErrorBody{
 			Code:    "validation_error",
@@ -33,12 +31,6 @@ func ValidationMap(err error) (ErrorBody, bool) {
 }
 
 func StorageMap(err error) (int, ErrorBody, bool) {
-	if errors.Is(err, storage.ErrTitleExists) {
-		return http.StatusConflict, ErrorBody{
-			Code:    "exist_error",
-			Message: "title exists",
-		}, true
-	}
 	if errors.Is(err, storage.ErrIdNotFound) {
 		return http.StatusNotFound, ErrorBody{
 			Code:    "not_found",

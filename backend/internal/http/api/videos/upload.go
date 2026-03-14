@@ -20,25 +20,6 @@ func (vh *VideosHandler) upload(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "video_id")
 	ctx := r.Context()
 
-	// v, err := vh.svc.Get(ctx, id)
-	// if err != nil {
-	// 	l.Info("failed to find video",
-	// 		slog.String("id", id),
-	// 		slog.Any("err", err),
-	// 	)
-	// 	status, body := apierrors.Map(err)
-	// 	httpjson.WriteJSON(w, r, status, body)
-	// 	return
-	// }
-	// if v.Status != videos.StatusCreated {
-	// 	l.Info("wrong video status",
-	// 		slog.String("id", id),
-	// 		slog.String("status", string(v.Status)),
-	// 	)
-	// 	httpjson.WriteJSON(w, r, 409, apierrors.New("conflict", "upload not allowed"))
-	// 	return
-	// }
-
 	max := vh.validator.Cfg.UplLimit.MaxSize
 	if r.ContentLength > max {
 		l.Info("content length longer than available",
@@ -47,33 +28,15 @@ func (vh *VideosHandler) upload(w http.ResponseWriter, r *http.Request) {
 		httpjson.WriteJSON(w, r, 413, apierrors.New("payload_too_large", "file too large"))
 		return
 	}
-
-	if err := vh.svc.MarkUploading(ctx, id); err != nil {
-		l.Error("cannot update video status", slog.String("id", id), slog.Any("err", err))
-		status, body := apierrors.Map(err)
-		httpjson.WriteJSON(w, r, status, body)
-		return
-	}
-
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 	defer r.Body.Close()
 
-	n, err := vh.svc.SaveRaw(ctx, id, r.Body)
+	n, err := vh.svc.UploadRaw(ctx, id, r.Body)
 	if err != nil {
-		_ = vh.svc.MarkUploadFailed(ctx, id)
-		l.Error("cannot save raw video",
+		l.Error("cannot upload raw",
 			slog.String("id", id),
 			slog.Any("err", err),
 		)
-		// TODO: need to make clever mapping
-		status, body := apierrors.Map(err)
-		httpjson.WriteJSON(w, r, status, body)
-		return
-	}
-
-	if err := vh.svc.MarkUploaded(ctx, id); err != nil {
-		_ = vh.svc.MarkUploadFailed(ctx, id)
-		l.Error("cannot update video status", slog.String("id", id), slog.Any("err", err))
 		status, body := apierrors.Map(err)
 		httpjson.WriteJSON(w, r, status, body)
 		return

@@ -5,6 +5,6 @@ import (
 	"io"
 )
 
-type FileStore interface {
+type UploadStore interface {
 	SaveRaw(ctx context.Context, id string, scr io.Reader) (int64, error)
 }

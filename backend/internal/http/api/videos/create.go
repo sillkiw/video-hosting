@@ -64,7 +64,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 	)
 	resp := dto.CreateResponse{
 		ID:     id,
-		Status: "created",
+		Status: videos.StatusCreated,
 		Upload: dto.UploadDetails{
 			Method: http.MethodPut,
 			URL:    "/api/videos/" + id + "/upload",

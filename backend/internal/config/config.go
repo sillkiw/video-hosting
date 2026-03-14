@@ -44,9 +44,8 @@ func MustLoad(configPath string) Config {
 		log.Fatalf("failed to read config: %v", err)
 	}
 
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("cannot load .env: %v", err)
-	}
+	_ = godotenv.Load()
+
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		log.Fatal("cannot read env: ", err)
 	}

@@ -41,9 +41,9 @@ func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, er
 
 	diskStore := disk.New(cfg.Video.DashPath, cfg.Video.RawPath)
 
-	videosServ := videos.New(storage, diskStore)
+	videosSrv := videos.New(storage, diskStore)
 	validator := videosvalidation.New(cfg.Validation)
-	videosHandler := videosapi.New(logger, videosServ, validator)
+	videosHandler := videosapi.New(logger, videosSrv, validator)
 
 	mainHandler := transport.NewRouter(logger, videosHandler)
 

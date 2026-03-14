@@ -12,6 +12,7 @@ import (
 )
 
 func (vh *VideosHandler) status(w http.ResponseWriter, r *http.Request) {
+	// TODO: complete response
 	const op = "http.api.videos.status"
 	l := vh.logger.With(
 		slog.String("op", op),
