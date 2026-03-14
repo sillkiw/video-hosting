@@ -101,16 +101,10 @@ func (p *FFmpegProcessor) buildConversionTasks(filePath, baseName, outDir string
 	}
 }
 
-// create_noaudio_file creates a flag file so that the MPD generator knows about the absence of audio
 func (p *FFmpegProcessor) create_noaudio_file(task task) error {
-	flagPath := filepath.Join(task.outputPath, task.baseName+"noaudio.txt")
-	if ferr := os.WriteFile(flagPath, nil, 0644); ferr != nil {
+	flagPath := filepath.Join(filepath.Dir(task.outputPath), task.baseName+"noaudio.txt")
+	if ferr := os.WriteFile(flagPath, nil, 0o644); ferr != nil {
 		return ferr
-		/*	s.logger.Error("failed to write noaudio flag",
-				slog.String("flagPath", flagPath),
-				slog.String("error", ferr.Error()),
-			)
-		*/
 	}
 	return nil
 }

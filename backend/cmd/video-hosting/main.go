@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"log"
 	"log/slog"
@@ -20,37 +22,27 @@ const (
 func main() {
 	configPath := flag.String("config", "./configs/config.yaml", "Path to configuration file")
 	flag.Parse()
-	cfg := config.MustLoad(*configPath)
 
+	cfg := config.MustLoad(*configPath)
 	logger, errorLog := setupLogger(cfg.Env)
 
-	// users := user.MustLoad(cfg.Auth.UsersFilePath)
-
-	app, err := app.New(logger, errorLog, cfg)
+	application, err := app.New(logger, errorLog, cfg)
 	if err != nil {
-		logger.Error("failed to init app",
-			slog.Any("err", err),
-		)
+		logger.Error("failed to init app", slog.Any("err", err))
 		return
 	}
-	defer app.Close()
 
-	go func() {
-		if err := app.Run(); err != nil {
-			logger.Error("server error", slog.Any("err", err))
-		}
-	}()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	<-sig
+	if err := application.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		logger.Error("app stopped with error", slog.Any("err", err))
+	}
 }
 
 func setupLogger(env string) (*slog.Logger, *log.Logger) {
-	var logger *slog.Logger
-	var errorLog *log.Logger
-
 	var handler slog.Handler
+
 	switch env {
 	case envDev:
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
@@ -60,8 +52,8 @@ func setupLogger(env string) (*slog.Logger, *log.Logger) {
 		handler = slog.NewTextHandler(os.Stdout, nil)
 	}
 
-	logger = slog.New(handler)
-	errorLog = slog.NewLogLogger(handler, slog.LevelError)
+	logger := slog.New(handler)
+	errorLog := slog.NewLogLogger(handler, slog.LevelError)
 
 	return logger, errorLog
 }

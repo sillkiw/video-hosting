@@ -27,7 +27,7 @@ func (ds DiskStore) SaveRaw(ctx context.Context, id string, src io.Reader) (int6
 		return 0, fmt.Errorf("%s: mkdir: %w", op, err)
 	}
 
-	finalPath := ds.pathFor(id)
+	finalPath := ds.GetRawPath(id)
 	tmpPath := ds.tmpPathFor(id)
 
 	f, err := os.Create(tmpPath)
@@ -57,6 +57,10 @@ func (ds DiskStore) tmpPathFor(id string) string {
 	return filepath.Join(ds.RawPath, id+".mp4.uploading")
 }
 
-func (ds DiskStore) pathFor(id string) string {
+func (ds DiskStore) GetRawPath(id string) string {
 	return filepath.Join(ds.RawPath, id+".mp4")
+}
+
+func (ds DiskStore) GetDashPath(id string) string {
+	return filepath.Join(ds.DashPath, id)
 }

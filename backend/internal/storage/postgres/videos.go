@@ -10,8 +10,6 @@ import (
 	"github.com/sillkiw/video-hosting/internal/videos"
 )
 
-const uniqueViolationCode = "23505"
-
 func (s *Storage) Create(ctx context.Context, v videos.Video) (string, error) {
 	const op = "storage.postgres.Create"
 	const q = `
