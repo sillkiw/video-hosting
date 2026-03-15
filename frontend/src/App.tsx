@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { Header } from "./components/Header";
 import { UploadModal } from "./components/UploadModal";
+import { UploadQueuePopover } from "./components/UploadQueuePopover";
 import { VideoGrid } from "./components/VideoGrid";
 import { mockVideos } from "./data/mockVideos";
 import { useVideoUpload } from "./hooks/useVideoUpload";
+import { useUploadQueue } from "./hooks/useUploadQueue";
 import { classNames } from "./utils/classNames";
 
 export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
 
-  const upload = useVideoUpload();
+  const queue = useUploadQueue();
+
+  const upload = useVideoUpload((item) => {
+    queue.addItem(item);
+  });
 
   function openModal() {
     upload.reset();
@@ -33,6 +39,16 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={() => setIsDark((v) => !v)}
         onOpenUpload={openModal}
+        queueButton={
+          <UploadQueuePopover
+            isDark={isDark}
+            isOpen={queue.isOpen}
+            activeCount={queue.activeCount}
+            items={queue.items}
+            onToggle={queue.toggleOpen}
+            onRemove={queue.removeItem}
+          />
+        }
       />
 
       <section

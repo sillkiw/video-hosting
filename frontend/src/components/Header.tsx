@@ -6,9 +6,10 @@ type Props = {
   isDark: boolean;
   onToggleTheme: () => void;
   onOpenUpload: () => void;
+  queueButton?: React.ReactNode;
 };
 
-export function Header({ isDark, onToggleTheme, onOpenUpload }: Props) {
+export function Header({ isDark, onToggleTheme, onOpenUpload, queueButton }: Props) {
   return (
     <header
       className={classNames(
@@ -53,6 +54,8 @@ export function Header({ isDark, onToggleTheme, onOpenUpload }: Props) {
               {isDark ? <FiSun /> : <FiMoon />}
             </span>
           </button>
+
+          {queueButton}
 
           <button
             onClick={onOpenUpload}

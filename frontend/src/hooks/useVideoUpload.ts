@@ -3,7 +3,9 @@ import { humanizeError, isApiError } from "../api/errors";
 import { createVideo, uploadVideo } from "../api/videos";
 import type { UploadState } from "../types/upload";
 
-export function useVideoUpload() {
+type OnUploaded = (item: { id: string; title: string; status: string }) => void;
+
+export function useVideoUpload(onUploaded?: OnUploaded) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<UploadState>({ kind: "idle" });
@@ -21,6 +23,7 @@ export function useVideoUpload() {
 
   function onFileChosen(f: File | null) {
     setFile(f);
+
     if (f && !title.trim()) {
       const base = f.name.replace(/\.[^/.]+$/, "");
       setTitle(base);
@@ -39,7 +42,9 @@ export function useVideoUpload() {
       return;
     }
 
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
       setState({
         kind: "error",
         err: {
@@ -54,7 +59,7 @@ export function useVideoUpload() {
       setState({ kind: "creating" });
 
       const created = await createVideo({
-        title: title.trim(),
+        title: trimmedTitle,
         content_type: inferredContentType,
         size: file.size,
       });
@@ -69,6 +74,12 @@ export function useVideoUpload() {
       );
 
       setState({ kind: "done", id: created.id });
+
+      onUploaded?.({
+        id: created.id,
+        title: trimmedTitle,
+        status: "uploaded",
+      });
     } catch (err: unknown) {
       const uiErr = isApiError(err)
         ? humanizeError(err)
@@ -87,7 +98,6 @@ export function useVideoUpload() {
     file,
     state,
     inferredContentType,
-    setState,
     reset,
     onFileChosen,
     submit,

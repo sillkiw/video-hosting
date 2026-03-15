@@ -55,3 +55,15 @@ export async function uploadVideo(
 
   if (!res.ok) throw await parseApiError(res);
 }
+
+export type VideoStatusResponse = {
+  id: string;
+  title: string;
+  status: string;
+};
+
+export async function getVideo(id: string): Promise<VideoStatusResponse> {
+  const res = await fetch(`/api/videos/${id}`);
+  if (!res.ok) throw await parseApiError(res);
+  return (await res.json()) as VideoStatusResponse;
+}
