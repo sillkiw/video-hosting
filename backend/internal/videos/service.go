@@ -7,12 +7,12 @@ import (
 )
 
 type Service struct {
-	repo        VideosRepository
+	repo        Repository
 	queue       Enqueuer
 	uploadStore UploadStore
 }
 
-func New(repo VideosRepository, queue Enqueuer, uploadStore UploadStore) *Service {
+func New(repo Repository, queue Enqueuer, uploadStore UploadStore) *Service {
 	return &Service{queue: queue, repo: repo, uploadStore: uploadStore}
 }
 
@@ -28,10 +28,6 @@ func (s *Service) UploadRaw(ctx context.Context, id string, src io.Reader) (int6
 		_ = s.markUploadFailed(ctx, id)
 		return 0, fmt.Errorf("%s: save raw: %w", op, err)
 	}
-
-	// 1. validate MIME/signature
-	// 2. ffprobe
-	// 3. cleanup on failure
 
 	if err := s.markUploaded(ctx, id); err != nil {
 		_ = s.markUploadFailed(ctx, id)
@@ -84,4 +80,13 @@ func (s *Service) GetStatus(ctx context.Context, id string) (string, error) {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 	return status, nil
+}
+
+func (s *Service) GetReadyVideos(ctx context.Context) ([]Video, error) {
+	const op = "videos.Service.GetReadyVideos"
+	videos, err := s.repo.GetReadyVideos(ctx)
+	if err != nil {
+		return []Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return videos, nil
 }

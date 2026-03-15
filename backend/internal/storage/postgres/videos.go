@@ -95,6 +95,45 @@ func (s *Storage) MarkNewStatus(ctx context.Context, id, prevStatus, newStatus s
 	return fmt.Errorf("%s: %w", op, storage.ErrConflict)
 }
 
+func (s *Storage) GetReadyVideos(ctx context.Context) ([]videos.Video, error) {
+	const op = "storage.postgres.GetReadyVideos"
+	const q = `
+		SELECT id, title, created_at
+		FROM videos
+		WHERE video_status = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, q, videos.StatusReady)
+	if err != nil {
+		return nil, fmt.Errorf("%s: query: %w", op, err)
+	}
+	defer rows.Close()
+
+	var items []videos.Video
+
+	for rows.Next() {
+		var v videos.Video
+
+		err := rows.Scan(
+			&v.ID,
+			&v.Title,
+			&v.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: scan: %w", op, err)
+		}
+
+		items = append(items, v)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: rows: %w", op, err)
+	}
+
+	return items, nil
+}
+
 func (s *Storage) Close() error {
 	return s.db.Close()
 }
