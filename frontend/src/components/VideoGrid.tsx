@@ -1,9 +1,9 @@
-import type { VideoCardItem } from "../types/video";
+import type { VideoListItem } from "../api/videos";
 import { classNames } from "../utils/classNames";
 import { VideoCard } from "./VideoCard";
 
 type Props = {
-  videos: VideoCardItem[];
+  videos: VideoListItem[];
   isDark: boolean;
 };
 
@@ -12,19 +12,19 @@ export function VideoGrid({ videos, isDark }: Props) {
     <>
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Trending</h2>
+          
           <p
             className={classNames(
               "mt-1 text-sm transition-colors duration-500",
               isDark ? "text-white/45" : "text-slate-500"
             )}
           >
-            Пока это моковые карточки. Дальше можно подключить реальный список.
+           
           </p>
         </div>
 
         <div className="hidden gap-2 md:flex">
-          {["All", "New", "Popular", "HD"].map((x) => (
+          {["All", "New"].map((x) => (
             <button
               key={x}
               className={classNames(

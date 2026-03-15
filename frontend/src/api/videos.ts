@@ -67,3 +67,21 @@ export async function getVideo(id: string): Promise<VideoStatusResponse> {
   if (!res.ok) throw await parseApiError(res);
   return (await res.json()) as VideoStatusResponse;
 }
+
+export type VideoListItem = {
+  id: string;
+  title: string;
+  created_at: string;
+};
+
+export type VideosListResponse = {
+  items: VideoListItem[];
+};
+
+export async function listVideos(): Promise<VideoListItem[]> {
+  const res = await fetch("/api/videos");
+  if (!res.ok) throw await parseApiError(res);
+
+  const data = (await res.json()) as VideosListResponse;
+  return data.items;
+}

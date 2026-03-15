@@ -1,12 +1,22 @@
 import { FiPlayCircle, FiUser } from "react-icons/fi";
-import type { VideoCardItem } from "../types/video";
+import type { VideoListItem } from "../api/videos";
 import { classNames } from "../utils/classNames";
-import { formatViews } from "../utils/formatViews";
 
 type Props = {
-  video: VideoCardItem;
+  video: VideoListItem;
   isDark: boolean;
 };
+
+function formatCreatedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
 
 export function VideoCard({ video, isDark }: Props) {
   return (
@@ -25,10 +35,6 @@ export function VideoCard({ video, isDark }: Props) {
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition duration-300 group-hover:scale-105 group-hover:bg-[#2563EB]">
             <FiPlayCircle className="h-7 w-7 text-white" />
           </div>
-        </div>
-
-        <div className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-          {video.duration}
         </div>
       </div>
 
@@ -56,7 +62,7 @@ export function VideoCard({ video, isDark }: Props) {
           >
             <FiUser className={isDark ? "text-white/80" : "text-slate-700"} />
           </span>
-          <span>{video.author}</span>
+          <span>Unknown creator</span>
         </div>
 
         <div
@@ -65,7 +71,7 @@ export function VideoCard({ video, isDark }: Props) {
             isDark ? "text-white/40" : "text-slate-400"
           )}
         >
-          {formatViews(video.views)}
+          {formatCreatedAt(video.created_at)}
         </div>
       </div>
     </article>

@@ -3,9 +3,9 @@ import { Header } from "./components/Header";
 import { UploadModal } from "./components/UploadModal";
 import { UploadQueuePopover } from "./components/UploadQueuePopover";
 import { VideoGrid } from "./components/VideoGrid";
-import { mockVideos } from "./data/mockVideos";
-import { useVideoUpload } from "./hooks/useVideoUpload";
 import { useUploadQueue } from "./hooks/useUploadQueue";
+import { useVideoUpload } from "./hooks/useVideoUpload";
+import { useVideosList } from "./hooks/useVideosList";
 import { classNames } from "./utils/classNames";
 
 export default function App() {
@@ -13,9 +13,11 @@ export default function App() {
   const [isDark, setIsDark] = useState(true);
 
   const queue = useUploadQueue();
+  const videosList = useVideosList();
 
   const upload = useVideoUpload((item) => {
     queue.addItem(item);
+    void videosList.reload();
   });
 
   function openModal() {
@@ -61,7 +63,30 @@ export default function App() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8">
-        <VideoGrid videos={mockVideos} isDark={isDark} />
+        {videosList.loading && (
+          <div className={isDark ? "text-white/60" : "text-slate-500"}>
+            Загружаю список видео…
+          </div>
+        )}
+
+        {!videosList.loading && videosList.error && (
+          <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-700">
+            <div className="font-semibold">{videosList.error.title}</div>
+            {videosList.error.description && (
+              <div className="mt-1">{videosList.error.description}</div>
+            )}
+          </div>
+        )}
+
+        {!videosList.loading && !videosList.error && videosList.items.length === 0 && (
+          <div className={isDark ? "text-white/60" : "text-slate-500"}>
+            Пока готовых видео нет.
+          </div>
+        )}
+
+        {!videosList.loading && !videosList.error && videosList.items.length > 0 && (
+          <VideoGrid videos={videosList.items} isDark={isDark} />
+        )}
       </main>
 
       <UploadModal
