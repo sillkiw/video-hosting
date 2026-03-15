@@ -10,7 +10,7 @@ import (
 	mvLogger "github.com/sillkiw/video-hosting/internal/http/middleware"
 )
 
-func NewRouter(logger *slog.Logger, vh *videosapi.VideosHandler) http.Handler {
+func NewRouter(logger *slog.Logger, vh *videosapi.VideosHandler, dashPath string) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -19,6 +19,9 @@ func NewRouter(logger *slog.Logger, vh *videosapi.VideosHandler) http.Handler {
 	router.Use(middleware.URLFormat)
 
 	router.Mount("/api/videos", vh.NewRouter())
+
+	fileServer := http.FileServer(http.Dir(dashPath))
+	router.Handle("/media/videos/*", http.StripPrefix("/media/videos/", fileServer))
 
 	return router
 }

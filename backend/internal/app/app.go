@@ -54,7 +54,7 @@ func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, er
 	validator := videosvalidation.New(cfg.Validation)
 	videosHandler := videosapi.New(logger, videosSrv, validator)
 
-	mainHandler := transport.NewRouter(logger, videosHandler)
+	mainHandler := transport.NewRouter(logger, videosHandler, diskStore.DashPath)
 
 	server := httpserver.New(errorLog, mainHandler, cfg.Server)
 	a.server = server
