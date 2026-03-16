@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Storage) EnqueueTranscode(ctx context.Context, videoID string) error {
-	const op = "storage.postgres.EnqueueTranscode"
+	const op = "storage.postgres.video_jobs.EnqueueTranscode"
 
 	const q = `
 		INSERT INTO video_jobs (video_id, job_type, status)
@@ -27,7 +27,7 @@ func (s *Storage) EnqueueTranscode(ctx context.Context, videoID string) error {
 }
 
 func (s *Storage) ClaimNextPending(ctx context.Context) (processing.Job, error) {
-	const op = "storage.postgres.ClaimNextPending"
+	const op = "storage.postgres.video_jobs.ClaimNextPending"
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Storage) ClaimNextPending(ctx context.Context) (processing.Job, error) 
 }
 
 func (s *Storage) MarkJobDone(ctx context.Context, jobID string) error {
-	const op = "storage.postgres.MarkJobDone"
+	const op = "storage.postgres.video_jobs.MarkJobDone"
 
 	const q = `
 		UPDATE video_jobs
@@ -126,7 +126,7 @@ func (s *Storage) MarkJobDone(ctx context.Context, jobID string) error {
 }
 
 func (s *Storage) MarkJobFailed(ctx context.Context, jobID string, errMsg string) error {
-	const op = "storage.postgres.MarkJobFailed"
+	const op = "storage.postgres.video_jobs.MarkJobFailed"
 
 	const q = `
 		UPDATE video_jobs

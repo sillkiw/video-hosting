@@ -10,15 +10,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sillkiw/video-hosting/internal/auth/jwt"
 	"github.com/sillkiw/video-hosting/internal/config"
 	"github.com/sillkiw/video-hosting/internal/filestore/disk"
 	transport "github.com/sillkiw/video-hosting/internal/http"
+	authapi "github.com/sillkiw/video-hosting/internal/http/api/auth"
+	authvalidation "github.com/sillkiw/video-hosting/internal/http/api/auth/validation"
 	videosapi "github.com/sillkiw/video-hosting/internal/http/api/videos"
 	videosvalidation "github.com/sillkiw/video-hosting/internal/http/api/videos/validation"
 	"github.com/sillkiw/video-hosting/internal/httpserver"
 	"github.com/sillkiw/video-hosting/internal/media"
 	"github.com/sillkiw/video-hosting/internal/processing"
 	"github.com/sillkiw/video-hosting/internal/storage/postgres"
+	"github.com/sillkiw/video-hosting/internal/users"
 	"github.com/sillkiw/video-hosting/internal/videos"
 )
 
@@ -36,29 +40,44 @@ func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, er
 		l: logger,
 	}
 
+	// init postgres storage
 	storage, err := postgres.New(cfg.DB.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	a.db = storage
 
-	videoRepo := storage
+	// make easy to read
+	videosRepo := storage
+	usersRepo := storage
 	jobEnqueuer := storage
 	jobQueue := storage
 	processingRepo := storage
 
+	// auth service
+	tokenManager := jwt.New(cfg.Auth.JWTSecret, cfg.Auth.JWTTTL, cfg.Auth.JWTIssuer)
+	authSrv := users.New(usersRepo, tokenManager)
+
+	// videos service
 	diskStore := disk.New(cfg.Video.DashPath, cfg.Video.RawPath)
+	videosSrv := videos.New(videosRepo, jobEnqueuer, diskStore)
 
-	videosSrv := videos.New(videoRepo, jobEnqueuer, diskStore)
+	// handlers for videos api
+	videosValidator := videosvalidation.New(cfg.Validation.Video)
+	videosHandler := videosapi.New(logger, videosSrv, videosValidator)
 
-	validator := videosvalidation.New(cfg.Validation)
-	videosHandler := videosapi.New(logger, videosSrv, validator)
+	// handlers for auth api
+	authValidator := authvalidation.New(cfg.Validation.Auth)
+	authHandler := authapi.New(logger, authSrv, authValidator)
 
-	mainHandler := transport.NewRouter(logger, videosHandler, diskStore.DashPath)
+	// centralized handler
+	mainHandler := transport.NewRouter(logger, videosHandler, authHandler, tokenManager, diskStore.DashPath)
 
+	// init httpserver
 	server := httpserver.New(errorLog, mainHandler, cfg.Server)
 	a.server = server
 
+	// media transcoder and worker for taking videos jobs from queue
 	processor := media.New(&cfg, diskStore)
 	a.worker = processing.NewWorker(logger, processingRepo, jobQueue, processor)
 

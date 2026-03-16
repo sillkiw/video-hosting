@@ -28,16 +28,6 @@ func (p *FFmpegProcessor) buildConversionTasks(filePath, baseName, outDir string
 	}
 
 	return []task{
-		// WebM with audio (low resolution)
-		mk(
-			fmt.Sprintf("low_%s_audio.webm", baseName),
-			true,  /* withAudio */
-			false, /* processAudio */
-			false, /* createThumb */
-			false, /* createMPD */
-			p.cfg.Video.Bitrates.Low,
-			p.cfg.Video.Resolutions.Low,
-		),
 		// Thumbnail extraction
 		mk(
 			fmt.Sprintf("thumb_%s.jpeg", baseName),

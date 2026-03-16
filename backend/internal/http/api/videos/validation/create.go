@@ -35,7 +35,7 @@ func (v *Validator) contentType(errs apivalid.Errors, cntType string) {
 		errs.Add("content_type", "required")
 	}
 
-	for _, t := range v.Cfg.UplLimit.AllowedContent {
+	for _, t := range v.Cfg.Upload.AllowedContent {
 		if strings.EqualFold(cntType, t) {
 			return
 		}
@@ -47,10 +47,10 @@ func (v *Validator) size(errs apivalid.Errors, size int64) {
 	if size <= 0 {
 		errs.Add("size", "invalid")
 	} else {
-		if size > v.Cfg.UplLimit.MaxSize {
+		if size > v.Cfg.Upload.MaxSize {
 			errs.Add("size", "too_large")
 		}
-		if size < v.Cfg.UplLimit.MinSize {
+		if size < v.Cfg.Upload.MinSize {
 			errs.Add("size", "too_small")
 		}
 	}

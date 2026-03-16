@@ -1,7 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT users_email_check CHECK (char_length(email) > 3),
+    CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'))
+);
+
 CREATE TABLE videos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     video_size BIGINT NOT NULL DEFAULT 0,
     content_type TEXT NOT NULL DEFAULT 'video/mp4',
@@ -30,6 +44,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_set_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER videos_set_updated_at
 BEFORE UPDATE ON videos

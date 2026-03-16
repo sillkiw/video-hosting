@@ -3,7 +3,7 @@ package videos
 import "context"
 
 type Repository interface {
-	Create(ctx context.Context, v Video) (string, error)
+	CreateVideo(ctx context.Context, v Video) (string, error)
 	Get(ctx context.Context, id string) (Video, error)
 	GetStatus(ctx context.Context, id string) (string, error)
 	GetReadyVideos(ctx context.Context) ([]Video, error)

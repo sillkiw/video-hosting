@@ -51,7 +51,6 @@ type Streaming struct {
 type VideoConfig struct {
 	DashPath       string           `yaml:"dash_path"`
 	RawPath        string           `yaml:"raw_path"`
-	PerPage        int              `yaml:"perpage"`
 	DeleteOriginal bool             `yaml:"delete_original"`
 	DeleteOld      DeleteOldPolicy  `yaml:"delete_old"`
 	Resolutions    ResolutionConfig `yaml:"resolutions"`

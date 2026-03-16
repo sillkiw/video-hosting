@@ -20,7 +20,7 @@ func (vh *VideosHandler) upload(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "video_id")
 	ctx := r.Context()
 
-	max := vh.validator.Cfg.UplLimit.MaxSize
+	max := vh.validator.Cfg.Upload.MaxSize
 	if r.ContentLength > max {
 		l.Info("content length longer than available",
 			slog.String("id", id),

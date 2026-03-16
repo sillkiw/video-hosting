@@ -55,7 +55,7 @@ func (s *Service) markUploaded(ctx context.Context, id string) error {
 
 func (s *Service) Create(ctx context.Context, v Video) (string, error) {
 	const op = "videos.Service.Create"
-	id, err := s.repo.Create(ctx, v)
+	id, err := s.repo.CreateVideo(ctx, v)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}

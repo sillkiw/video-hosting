@@ -10,8 +10,8 @@ import (
 	"github.com/sillkiw/video-hosting/internal/videos"
 )
 
-func (s *Storage) Create(ctx context.Context, v videos.Video) (string, error) {
-	const op = "storage.postgres.Create"
+func (s *Storage) CreateVideo(ctx context.Context, v videos.Video) (string, error) {
+	const op = "storage.postgres.videos.CreateVideo"
 	const q = `
 		INSERT INTO videos(title, video_size, video_status) 
 		VALUES ($1, $2, $3)
@@ -28,8 +28,8 @@ func (s *Storage) Create(ctx context.Context, v videos.Video) (string, error) {
 	return id, nil
 }
 
-func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
-	const op = "storage.postgres.Get"
+func (s *Storage) Get(ctx context.Context, video_id string) (videos.Video, error) {
+	const op = "storage.postgres.videos.Get"
 	const q = `
 		SELECT id, title, video_size, content_type, video_status, created_at, updated_at
 		FROM videos
@@ -38,7 +38,7 @@ func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
 
 	var vRec videos.Video
 
-	err := s.db.QueryRowContext(ctx, q, id).Scan(
+	err := s.db.QueryRowContext(ctx, q, video_id).Scan(
 		&vRec.ID,
 		&vRec.Title,
 		&vRec.Size,
@@ -49,7 +49,7 @@ func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return videos.Video{}, fmt.Errorf("%s: %w", op, storage.ErrIdNotFound)
+			return videos.Video{}, fmt.Errorf("%s: %w", op, storage.ErrVideoIDNotFound)
 		}
 		return videos.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -57,25 +57,25 @@ func (s *Storage) Get(ctx context.Context, id string) (videos.Video, error) {
 	return vRec, nil
 }
 
-func (s *Storage) GetStatus(ctx context.Context, id string) (string, error) {
-	const op = "storage.postgres.GetStatus"
+func (s *Storage) GetStatus(ctx context.Context, video_id string) (string, error) {
+	const op = "storage.postgres.videos.GetStatus"
 
-	vRec, err := s.Get(ctx, id)
+	vRec, err := s.Get(ctx, video_id)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 	return vRec.Status, nil
 }
 
-func (s *Storage) MarkNewStatus(ctx context.Context, id, prevStatus, newStatus string) error {
-	const op = "storage.postgres.MarkUploading"
+func (s *Storage) MarkNewStatus(ctx context.Context, video_id, prevStatus, newStatus string) error {
+	const op = "storage.postgres.videos.MarkUploading"
 	const q = `
 		UPDATE videos
 		SET video_status = $2, updated_at = now()
 		WHERE id = $1 AND video_status = $3
 	`
 
-	res, err := s.db.ExecContext(ctx, q, id, newStatus, prevStatus)
+	res, err := s.db.ExecContext(ctx, q, video_id, newStatus, prevStatus)
 	if err != nil {
 		return fmt.Errorf("%s: exec: %w", op, err)
 	}
@@ -88,7 +88,7 @@ func (s *Storage) MarkNewStatus(ctx context.Context, id, prevStatus, newStatus s
 		return nil
 	}
 
-	_, err = s.Get(ctx, id)
+	_, err = s.Get(ctx, video_id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -96,7 +96,7 @@ func (s *Storage) MarkNewStatus(ctx context.Context, id, prevStatus, newStatus s
 }
 
 func (s *Storage) GetReadyVideos(ctx context.Context) ([]videos.Video, error) {
-	const op = "storage.postgres.GetReadyVideos"
+	const op = "storage.postgres.videos.GetReadyVideos"
 	const q = `
 		SELECT id, title, created_at
 		FROM videos

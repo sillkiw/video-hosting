@@ -51,7 +51,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	id, err := vh.svc.Create(r.Context(), video)
 	if err != nil {
-		l.Error("failed to create video record",
+		l.Info("failed to create video record",
 			slog.Any("err", err),
 		)
 		status, body := apierrors.Map(err)
@@ -71,7 +71,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 			Headers: map[string]string{
 				"Content-Type": req.ContentType,
 			},
-			MaxBytes: vh.validator.Cfg.UplLimit.MaxSize,
+			MaxBytes: vh.validator.Cfg.Upload.MaxSize,
 		},
 		Links: dto.LinksCr{
 			Self: "/api/videos/" + id,

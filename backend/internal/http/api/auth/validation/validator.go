@@ -1,13 +1,13 @@
-package videosvalidation
+package authvalidation
 
 import (
 	"github.com/sillkiw/video-hosting/internal/config"
 )
 
 type Validator struct {
-	Cfg config.VideoValidationConfig
+	Cfg config.AuthValidationConfig
 }
 
-func New(cfg config.VideoValidationConfig) Validator {
+func New(cfg config.AuthValidationConfig) Validator {
 	return Validator{Cfg: cfg}
 }

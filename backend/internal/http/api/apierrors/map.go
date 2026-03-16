@@ -31,7 +31,7 @@ func ValidationMap(err error) (ErrorBody, bool) {
 }
 
 func StorageMap(err error) (int, ErrorBody, bool) {
-	if errors.Is(err, storage.ErrIdNotFound) {
+	if errors.Is(err, storage.ErrVideoIDNotFound) {
 		return http.StatusNotFound, ErrorBody{
 			Code:    "not_found",
 			Message: "id not found",
