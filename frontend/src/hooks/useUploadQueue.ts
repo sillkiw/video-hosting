@@ -3,9 +3,30 @@ import { getVideoDetail } from "../api/videos";
 import type { QueueItem } from "../types/queue";
 
 const FINAL_STATUSES = new Set(["ready", "failed_upload", "failed_processing"]);
+const STORAGE_KEY = "upload_queue_v1";
+
+function loadQueue(): QueueItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(
+      (item): item is QueueItem =>
+        item &&
+        typeof item.id === "string" &&
+        typeof item.title === "string" &&
+        typeof item.status === "string"
+    );
+  } catch {
+    return [];
+  }
+}
 
 export function useUploadQueue() {
-  const [items, setItems] = useState<QueueItem[]>([]);
+  const [items, setItems] = useState<QueueItem[]>(() => loadQueue());
   const [isOpen, setIsOpen] = useState(false);
 
   function addItem(item: QueueItem) {
@@ -22,6 +43,11 @@ export function useUploadQueue() {
   function toggleOpen() {
     setIsOpen((v) => !v);
   }
+
+  useEffect(() => {
+    const persisted = items.filter((x) => !FINAL_STATUSES.has(x.status));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+  }, [items]);
 
   useEffect(() => {
     const active = items.filter((x) => !FINAL_STATUSES.has(x.status));

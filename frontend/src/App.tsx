@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 
 import { HomePage } from "./pages/HomePage";
@@ -20,6 +20,7 @@ export default function App() {
   const queue = useUploadQueue();
   const upload = useVideoUpload((item) => {
     queue.addItem(item);
+    queue.setIsOpen(true);
   });
 
   function openModal() {
@@ -38,6 +39,12 @@ export default function App() {
     }
     setIsModalOpen(false);
   }
+
+  useEffect(() => {
+    if (upload.state.kind === "done") {
+      setIsModalOpen(false);
+    }
+  }, [upload.state.kind]);
 
   return (
     <Routes>
@@ -71,7 +78,7 @@ export default function App() {
         }
       />
 
-       <Route
+      <Route
         path="/login"
         element={<LoginPage isDark={isDark} setIsDark={setIsDark} />}
       />
