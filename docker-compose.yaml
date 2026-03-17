@@ -25,11 +25,24 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      SERVER_ADDR: ${SERVER_ADDR}
+      APP_ENV: ${APP_ENV}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_TTL: ${JWT_TTL}
+      JWT_ISSUER: ${JWT_ISSUER}
+    secrets:
+      - postgres_password
     volumes:
       - ./backend/configs:/app/configs:ro
       - videos_data:/data/videos
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1${SERVER_ADDR}${SERVER_ADDR}"
 
 secrets:
   postgres_password:
