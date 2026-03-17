@@ -13,11 +13,13 @@ const (
 )
 
 type Video struct {
-	ID          string
-	Title       string
-	Size        int64
-	ContentType string
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID               string
+	OwnerID          string
+	OwnerDisplayName string
+	Title            string
+	Size             int64
+	ContentType      string
+	Status           string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }

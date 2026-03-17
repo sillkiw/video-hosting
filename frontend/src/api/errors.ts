@@ -1,4 +1,9 @@
-import type { ApiError } from "./videos";
+export type ApiError = {
+  code: string;
+  message?: string;
+  fields?: Record<string, string>;
+};
+
 
 export type UiError = {
   title: string;
@@ -59,4 +64,13 @@ export function humanizeError(err: ApiError): UiError {
 
 export function isApiError(err: unknown): err is ApiError {
   return typeof err === "object" && err !== null && "code" in err;
+}
+
+
+export async function parseApiError(res: Response): Promise<ApiError> {
+  try {
+    return (await res.json()) as ApiError;
+  } catch {
+    return { code: "unknown_error", message: `HTTP ${res.status}` };
+  }
 }

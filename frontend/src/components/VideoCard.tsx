@@ -24,26 +24,37 @@ export function VideoCard({ video, isDark }: Props) {
     <Link to={`/videos/${video.id}`} className="block">
       <article
         className={classNames(
-          "group overflow-hidden rounded-lg ring-1 transition-[background-color,transform,box-shadow,border-color] duration-500 ease-in-out",
+          "group overflow-hidden rounded-xl ring-1 transition-[background-color,transform,box-shadow,border-color] duration-500 ease-in-out",
           isDark
-            ? "bg-[#14171F] ring-white/6 hover:-translate-y-0.5 hover:ring-[#2563EB]/60"
-            : "bg-white ring-black/6 shadow-sm hover:-translate-y-0.5 hover:ring-[#2563EB]/60 hover:shadow-lg"
+            ? "bg-[#14171F] ring-white/6 hover:-translate-y-1 hover:ring-[#2563EB]/60"
+            : "bg-white ring-black/6 shadow-sm hover:-translate-y-1 hover:ring-[#2563EB]/60 hover:shadow-lg"
         )}
       >
         <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[#111827] via-[#172554] to-[#2563EB]">
+          {video.thumbnail_url ? (
+            <img
+              src={video.thumbnail_url}
+              alt={video.title}
+              className="block h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : null}
+
           <div className="absolute inset-0 bg-black/20 transition duration-300 group-hover:bg-black/10" />
 
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition duration-300 group-hover:scale-105 group-hover:bg-[#2563EB]">
-              <FiPlayCircle className="h-7 w-7 text-white" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition duration-300 group-hover:scale-105 group-hover:bg-[#2563EB]">
+              <FiPlayCircle className="h-8 w-8 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="p-3">
+        <div className="p-4">
           <div
             className={classNames(
-              "text-sm font-bold leading-5 transition-colors duration-500",
+              "line-clamp-2 text-[15px] font-bold leading-6 transition-colors duration-500",
               isDark ? "text-white" : "text-[#111827]"
             )}
           >
@@ -52,24 +63,24 @@ export function VideoCard({ video, isDark }: Props) {
 
           <div
             className={classNames(
-              "mt-2 flex items-center gap-2 text-xs transition-colors duration-500",
+              "mt-3 flex items-center gap-2 text-sm transition-colors duration-500",
               isDark ? "text-white/55" : "text-slate-500"
             )}
           >
             <span
               className={classNames(
-                "inline-flex h-7 w-7 items-center justify-center rounded-full transition-[background-color,color] duration-500",
+                "inline-flex h-8 w-8 items-center justify-center rounded-full transition-[background-color,color] duration-500",
                 isDark ? "bg-[#1F2430]" : "bg-slate-100"
               )}
             >
               <FiUser className={isDark ? "text-white/80" : "text-slate-700"} />
             </span>
-            <span>Unknown creator</span>
+            <span>{video.owner_display_name ?? "Unknown creator"}</span>
           </div>
 
           <div
             className={classNames(
-              "mt-2 text-xs transition-colors duration-500",
+              "mt-2 text-sm transition-colors duration-500",
               isDark ? "text-white/40" : "text-slate-400"
             )}
           >

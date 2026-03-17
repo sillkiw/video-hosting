@@ -1,6 +1,10 @@
-import { FiMoon, FiSun, FiUpload, FiUser } from "react-icons/fi";
-import { Logo } from "./Logo";
+import { useEffect, useRef, useState } from "react";
+import { FiLogOut, FiMoon, FiSun, FiUpload, FiUser } from "react-icons/fi";
+import {  useNavigate } from "react-router-dom";
+
+import { useAuth } from "../auth/useAuth";
 import { classNames } from "../utils/classNames";
+import { Logo } from "./Logo";
 
 type Props = {
   isDark: boolean;
@@ -9,7 +13,63 @@ type Props = {
   queueButton?: React.ReactNode;
 };
 
-export function Header({ isDark, onToggleTheme, onOpenUpload, queueButton }: Props) {
+export function Header({
+  isDark,
+  onToggleTheme,
+  onOpenUpload,
+  queueButton,
+}: Props) {
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function toggleAccountMenu() {
+    setIsAccountMenuOpen((v) => !v);
+  }
+
+  function handleLogout() {
+    auth.logout();
+    setIsAccountMenuOpen(false);
+    navigate("/", { replace: true });
+  }
+
+  function handleLoginClick() {
+    setIsAccountMenuOpen(false);
+    navigate("/login");
+  }
+
+  function handleRegisterClick() {
+    setIsAccountMenuOpen(false);
+    navigate("/register");
+  }
+
   return (
     <header
       className={classNames(
@@ -65,18 +125,94 @@ export function Header({ isDark, onToggleTheme, onOpenUpload, queueButton }: Pro
             Загрузить
           </button>
 
-          <button
-            className={classNames(
-              "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-500 ease-in-out",
-              isDark
-                ? "border-white/10 bg-[#1A1D24] text-white hover:border-[#2563EB] hover:text-[#60A5FA]"
-                : "border-slate-200 bg-white text-slate-700 hover:border-[#2563EB] hover:text-[#2563EB]"
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              onClick={toggleAccountMenu}
+              className={classNames(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-500 ease-in-out",
+                isDark
+                  ? "border-white/10 bg-[#1A1D24] text-white hover:border-[#2563EB] hover:text-[#60A5FA]"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-[#2563EB] hover:text-[#2563EB]"
+              )}
+              aria-label="Account"
+              title="Аккаунт"
+            >
+              <FiUser />
+            </button>
+
+            {isAccountMenuOpen && (
+              <div
+                className={classNames(
+                  "absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border shadow-lg",
+                  isDark
+                    ? "border-white/10 bg-[#111318] text-white"
+                    : "border-slate-200 bg-white text-slate-900"
+                )}
+              >
+                {!auth.isAuthenticated ? (
+                  <div className="flex flex-col p-2">
+                    <button
+                      onClick={handleLoginClick}
+                      className={classNames(
+                        "rounded-lg px-3 py-2 text-left text-sm transition",
+                        isDark
+                          ? "hover:bg-white/5"
+                          : "hover:bg-slate-50"
+                      )}
+                    >
+                      Войти
+                    </button>
+
+                    <button
+                      onClick={handleRegisterClick}
+                      className={classNames(
+                        "rounded-lg px-3 py-2 text-left text-sm transition",
+                        isDark
+                          ? "hover:bg-white/5"
+                          : "hover:bg-slate-50"
+                      )}
+                    >
+                      Зарегистрироваться
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-2">
+                    <div
+                      className={classNames(
+                        "mb-2 rounded-lg px-3 py-2",
+                        isDark ? "bg-white/5" : "bg-slate-50"
+                      )}
+                    >
+                      <div className="text-sm font-medium">
+                        {auth.user?.display_name ?? "Пользователь"}
+                      </div>
+                      <div
+                        className={classNames(
+                          "mt-1 text-xs",
+                          isDark ? "text-white/50" : "text-slate-500"
+                        )}
+                      >
+                        {auth.user?.email}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className={classNames(
+                        "inline-flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
+                        isDark
+                          ? "hover:bg-red-500/10 hover:text-red-300"
+                          : "hover:bg-red-50 hover:text-red-600"
+                      )}
+                    >
+                      <FiLogOut />
+                      Выйти
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
-            aria-label="Account"
-            title="Account"
-          >
-            <FiUser />
-          </button>
+          </div>
         </div>
       </div>
     </header>

@@ -5,6 +5,7 @@ server:
     idle_timeout: 60s
 
 video:
+  threads: 3
   dash_path:     "./data/dash"
   raw_path:      "./data/raw"
   # delete_original:  true

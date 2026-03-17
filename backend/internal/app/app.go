@@ -27,10 +27,11 @@ import (
 )
 
 type App struct {
-	l      *slog.Logger
-	db     io.Closer
-	server *httpserver.Server
-	worker *processing.Worker
+	l            *slog.Logger
+	db           io.Closer
+	server       *httpserver.Server
+	worker       *processing.Worker
+	numThreading int
 }
 
 func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, error) {
@@ -81,12 +82,14 @@ func New(logger *slog.Logger, errorLog *log.Logger, cfg config.Config) (*App, er
 	processor := media.New(&cfg, diskStore)
 	a.worker = processing.NewWorker(logger, processingRepo, jobQueue, processor)
 
+	a.numThreading = cfg.Video.Threads
+
 	return a, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
 	go func() {
-		if err := a.worker.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := a.worker.Run(ctx, a.numThreading); err != nil && !errors.Is(err, context.Canceled) {
 			a.l.Error("worker stopped", slog.Any("err", err))
 		}
 	}()

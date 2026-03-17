@@ -20,26 +20,35 @@ function formatCreatedAt(value: string) {
 
 export function RelatedVideosList({ videos, isDark }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {videos.map((video) => (
         <Link
           key={video.id}
           to={`/videos/${video.id}`}
           className={classNames(
-            "flex gap-3 rounded-xl p-2 transition-all duration-300",
-            isDark
-              ? "hover:bg-white/5"
-              : "hover:bg-slate-100"
+            "flex gap-4 rounded-2xl p-3 transition-all duration-300",
+            isDark ? "hover:bg-white/5" : "hover:bg-slate-100"
           )}
         >
-          <div className="w-44 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[#111827] via-[#172554] to-[#2563EB]">
-            <div className="aspect-video w-full" />
+          <div className="w-52 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#111827] via-[#172554] to-[#2563EB] lg:w-56">
+            <div className="aspect-video w-full">
+              {video.thumbnail_url ? (
+                <img
+                  src={video.thumbnail_url}
+                  alt={video.title}
+                  className="block h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : null}
+            </div>
           </div>
 
           <div className="min-w-0 flex-1">
             <div
               className={classNames(
-                "line-clamp-2 text-sm font-bold leading-5",
+                "line-clamp-2 text-[15px] font-bold leading-6",
                 isDark ? "text-white" : "text-[#111827]"
               )}
             >
@@ -48,16 +57,16 @@ export function RelatedVideosList({ videos, isDark }: Props) {
 
             <div
               className={classNames(
-                "mt-2 text-xs",
+                "mt-3 text-sm",
                 isDark ? "text-white/45" : "text-slate-500"
               )}
             >
-              Unknown creator
+              {video.owner_display_name ?? "Unknown creator"}
             </div>
 
             <div
               className={classNames(
-                "mt-1 text-xs",
+                "mt-1.5 text-sm",
                 isDark ? "text-white/35" : "text-slate-400"
               )}
             >

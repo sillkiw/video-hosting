@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getVideo } from "../api/videos";
+import { getVideoDetail } from "../api/videos";
 import type { QueueItem } from "../types/queue";
 
 const FINAL_STATUSES = new Set(["ready", "failed_upload", "failed_processing"]);
@@ -29,7 +29,7 @@ export function useUploadQueue() {
 
     const timer = window.setInterval(async () => {
       const updates = await Promise.allSettled(
-        active.map((item) => getVideo(item.id))
+        active.map((item) => getVideoDetail(item.id))
       );
 
       setItems((prev) =>

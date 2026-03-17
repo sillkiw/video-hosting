@@ -34,16 +34,18 @@ func (vh *VideosHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := dto.GetResponse{
-		ID:        videoRec.ID,
-		Title:     videoRec.Title,
-		Status:    videoRec.Status,
-		CreatedAt: videoRec.CreatedAt,
-		UpdatedAt: videoRec.UpdatedAt,
+	resp := dto.VideoResponse{
+		ID:               videoRec.ID,
+		Title:            videoRec.Title,
+		Status:           videoRec.Status,
+		CreatedAt:        videoRec.CreatedAt,
+		UpdatedAt:        videoRec.UpdatedAt,
+		OwnerDisplayName: videoRec.OwnerDisplayName,
 	}
 
 	if videoRec.Status == videos.StatusReady {
 		resp.ManifestURL = "/media/videos/" + videoRec.ID + "/output.mpd"
+		resp.ThumbnailURL = "/media/videos/" + videoRec.ID + "/thumb_" + videoRec.ID + ".jpeg"
 	}
 
 	httpjson.WriteJSON(w, r, http.StatusOK, resp)

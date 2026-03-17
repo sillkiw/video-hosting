@@ -1,22 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
+import { getVideoDetail, type VideoDetailResponse } from "../api/videos";
+import { humanizeError, isApiError } from "../api/errors";
+
 import { Header } from "../components/Header";
 import { RelatedVideosList } from "../components/RelatedVideosList";
 import { UploadModal } from "../components/UploadModal";
 import { UploadQueuePopover } from "../components/UploadQueuePopover";
 import { VideoPlayer } from "../components/VideoPlayer";
+
 import { useVideosList } from "../hooks/useVideosList";
+
 import type { AppPageProps } from "../types/pageProps";
 import { classNames } from "../utils/classNames";
-
-type VideoDetail = {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  manifest_url?: string;
-};
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -59,7 +56,7 @@ export function VideoPage({
 }: AppPageProps) {
   const { id } = useParams<{ id: string }>();
 
-  const [video, setVideo] = useState<VideoDetail | null>(null);
+  const [video, setVideo] = useState<VideoDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,15 +70,15 @@ export function VideoPage({
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/videos/${id}`);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = (await res.json()) as VideoDetail;
+        const data = await getVideoDetail(id);
         setVideo(data);
-      } catch {
-        setError("Не удалось загрузить видео.");
+      } catch (err) {
+        if (isApiError(err)) {
+          const uiErr = humanizeError(err);
+          setError(uiErr.description ?? uiErr.title);
+        } else {
+          setError("Не удалось загрузить видео.");
+        }
       } finally {
         setLoading(false);
       }
@@ -126,7 +123,7 @@ export function VideoPage({
         )}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="mx-auto max-w-[1480px] px-5 py-8">
         {loading && (
           <div className={isDark ? "text-white/60" : "text-slate-500"}>
             Загружаю видео…
@@ -140,14 +137,16 @@ export function VideoPage({
         )}
 
         {!loading && !error && video && (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_460px]">
             <div>
               <div className="mb-4">
                 <Link
                   to="/"
                   className={classNames(
                     "text-sm font-semibold transition-colors",
-                    isDark ? "text-white/70 hover:text-white" : "text-slate-600 hover:text-[#111827]"
+                    isDark
+                      ? "text-white/70 hover:text-white"
+                      : "text-slate-600 hover:text-[#111827]"
                   )}
                 >
                   ← Назад к списку
@@ -156,6 +155,26 @@ export function VideoPage({
 
               {video.status === "ready" && video.manifest_url ? (
                 <VideoPlayer manifestUrl={video.manifest_url} isDark={isDark} />
+              ) : video.thumbnail_url ? (
+                <div
+                  className={classNames(
+                    "overflow-hidden rounded-2xl border",
+                    isDark
+                      ? "border-white/10 bg-[#111318]"
+                      : "border-slate-200 bg-white"
+                  )}
+                >
+                  <div className="relative aspect-video">
+                    <img
+                      src={video.thumbnail_url}
+                      alt={video.title}
+                      className="block h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 px-6 text-center text-sm text-white">
+                      {getStatusText(video.status)}
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div
                   className={classNames(
@@ -185,6 +204,9 @@ export function VideoPage({
                     isDark ? "text-white/45" : "text-slate-500"
                   )}
                 >
+                  <span>
+                    Автор: {video.owner_display_name ?? "Unknown creator"}
+                  </span>
                   <span>Создано: {formatDate(video.created_at)}</span>
                   <span>Обновлено: {formatDate(video.updated_at)}</span>
                   <span>ID: {video.id}</span>
@@ -203,8 +225,8 @@ export function VideoPage({
               </div>
             </div>
 
-            <aside>
-              <div className="mb-4">
+            <aside className="min-w-0 lg:pl-2">
+              <div className="mb-5">
                 <h2
                   className={classNames(
                     "text-lg font-bold tracking-tight",

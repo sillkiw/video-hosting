@@ -1,3 +1,6 @@
+import { parseApiError } from "./errors";
+import { apiFetch } from "./http";
+
 export type CreateRequest = {
   title: string;
   content_type: string;
@@ -16,22 +19,31 @@ export type CreateResponse = {
   links?: { self?: string };
 };
 
-export type ApiError = {
-  code: string;
-  message?: string;
-  fields?: Record<string, string>;
+export type VideoListItem = {
+  id: string;
+  title: string;
+  created_at: string;
+  thumbnail_url?: string;
+  owner_display_name?: string;
 };
 
-async function parseApiError(res: Response): Promise<ApiError> {
-  try {
-    return (await res.json()) as ApiError;
-  } catch {
-    return { code: "unknown_error", message: `HTTP ${res.status}` };
-  }
-}
+export type VideosListResponse = {
+  items: VideoListItem[];
+};
+
+export type VideoDetailResponse = {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  manifest_url?: string;
+  thumbnail_url?: string;
+  owner_display_name?: string;
+};
 
 export async function createVideo(req: CreateRequest): Promise<CreateResponse> {
-  const res = await fetch("/api/videos/create", {
+  const res = await apiFetch("/api/videos/create", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -47,7 +59,7 @@ export async function uploadVideo(
   file: File,
   headers?: Record<string, string>
 ): Promise<void> {
-  const res = await fetch(uploadUrl, {
+  const res = await apiFetch(uploadUrl, {
     method,
     headers: headers ?? {},
     body: file,
@@ -56,32 +68,16 @@ export async function uploadVideo(
   if (!res.ok) throw await parseApiError(res);
 }
 
-export type VideoStatusResponse = {
-  id: string;
-  title: string;
-  status: string;
-};
-
-export async function getVideo(id: string): Promise<VideoStatusResponse> {
-  const res = await fetch(`/api/videos/${id}`);
+export async function getVideoDetail(id: string): Promise<VideoDetailResponse> {
+  const res = await apiFetch(`/api/videos/${id}`);
   if (!res.ok) throw await parseApiError(res);
-  return (await res.json()) as VideoStatusResponse;
+  return (await res.json()) as VideoDetailResponse;
 }
 
-export type VideoListItem = {
-  id: string;
-  title: string;
-  created_at: string;
-};
-
-export type VideosListResponse = {
-  items: VideoListItem[];
-};
-
 export async function listVideos(): Promise<VideoListItem[]> {
-  const res = await fetch("/api/videos");
+  const res = await apiFetch("/api/videos");
   if (!res.ok) throw await parseApiError(res);
 
-  const data = (await res.json()) as VideosListResponse;
-  return data.items;
+  const data = (await res.json()) as Partial<VideosListResponse>;
+  return Array.isArray(data.items) ? data.items : [];
 }

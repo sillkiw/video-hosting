@@ -9,6 +9,7 @@ import (
 	apierrors "github.com/sillkiw/video-hosting/internal/http/api/apierrors"
 	"github.com/sillkiw/video-hosting/internal/http/api/videos/dto"
 	"github.com/sillkiw/video-hosting/internal/http/httpjson"
+	authmw "github.com/sillkiw/video-hosting/internal/http/middleware"
 	"github.com/sillkiw/video-hosting/internal/videos"
 )
 
@@ -18,6 +19,14 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 		slog.String("op", op),
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 	)
+
+	userID, ok := authmw.UserID(r.Context())
+	if !ok {
+		l.Info("missing auth context")
+		body := apierrors.New("unauthorized", "missing auth context")
+		httpjson.WriteJSON(w, r, http.StatusUnauthorized, body)
+		return
+	}
 
 	var req dto.CreateRequest
 
@@ -43,6 +52,7 @@ func (vh *VideosHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	video := videos.Video{
+		OwnerID:     userID,
 		Title:       req.Title,
 		Size:        req.Size,
 		ContentType: req.ContentType,

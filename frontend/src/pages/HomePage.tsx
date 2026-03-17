@@ -49,7 +49,7 @@ export function HomePage({
         )}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-8">
+     <main className="mx-auto max-w-[1480px] px-5 py-8">
         {videosList.loading && (
           <div className={isDark ? "text-white/60" : "text-slate-500"}>
             Загружаю список видео…

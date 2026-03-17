@@ -52,6 +52,7 @@ type VideoConfig struct {
 	DashPath       string           `yaml:"dash_path"`
 	RawPath        string           `yaml:"raw_path"`
 	DeleteOriginal bool             `yaml:"delete_original"`
+	Threads        int              `yaml:"threads"`
 	DeleteOld      DeleteOldPolicy  `yaml:"delete_old"`
 	Resolutions    ResolutionConfig `yaml:"resolutions"`
 	Bitrates       BitrateConfig    `yaml:"bitrates"`

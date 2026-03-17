@@ -29,13 +29,15 @@ func (vh *VideosHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp dto.ListResponse
+	var resp dto.VideosListResponse
 	for _, video := range readyVideos {
 		resp.Items = append(resp.Items,
-			dto.ListItem{
-				ID:        video.ID,
-				Title:     video.Title,
-				CreatedAt: video.CreatedAt,
+			dto.VideoListItem{
+				ID:               video.ID,
+				Title:            video.Title,
+				CreatedAt:        video.CreatedAt,
+				ThumbnailURL:     "/media/videos/" + video.ID + "/thumb_" + video.ID + ".jpeg",
+				OwnerDisplayName: video.OwnerDisplayName,
 			},
 		)
 	}

@@ -3,7 +3,9 @@ package processing
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/sillkiw/video-hosting/internal/storage"
@@ -31,8 +33,48 @@ func NewWorker(
 	}
 }
 
-func (w *Worker) Run(ctx context.Context) error {
+func (w *Worker) Run(ctx context.Context, concurrency int) error {
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, concurrency)
+
+	for i := 0; i < concurrency; i++ {
+		workerID := i + 1
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			if err := w.runLoop(ctx, workerID); err != nil && !errors.Is(err, context.Canceled) {
+				errCh <- fmt.Errorf("worker %d: %w", workerID, err)
+			}
+		}()
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		<-done
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	case <-done:
+		return nil
+	}
+}
+
+func (w *Worker) runLoop(ctx context.Context, workerID int) error {
 	const idleDelay = 2 * time.Second
+
+	logger := w.logger.With(slog.Int("worker_id", workerID))
 
 	for {
 		select {
@@ -44,17 +86,32 @@ func (w *Worker) Run(ctx context.Context) error {
 		job, err := w.queue.ClaimNextPending(ctx)
 		if err != nil {
 			if errors.Is(err, storage.ErrNoJobs) {
-				time.Sleep(idleDelay)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(idleDelay):
+				}
 				continue
 			}
 
-			w.logger.Error("failed to claim job", slog.Any("err", err))
-			time.Sleep(idleDelay)
+			logger.Error("failed to claim job", slog.Any("err", err))
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(idleDelay):
+			}
 			continue
 		}
 
+		logger.Info(
+			"claimed job",
+			slog.String("job_id", job.ID),
+			slog.String("video_id", job.VideoID),
+		)
+
 		if err := w.handleJob(ctx, job); err != nil {
-			w.logger.Error(
+			logger.Error(
 				"failed to handle job",
 				slog.String("job_id", job.ID),
 				slog.String("video_id", job.VideoID),
